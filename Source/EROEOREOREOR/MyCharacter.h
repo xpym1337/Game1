@@ -4,17 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbilitySystemInterface.h" 
 #include "MyCharacter.generated.h"
 
+class UAbilitySystemComponent;  // Forward declaration
+
 UCLASS()
-class EROEOREOREOR_API AMyCharacter : public ACharacter
+class EROEOREOREOR_API AMyCharacter : public ACharacter , public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
 	AMyCharacter();
-
+	
+    // IAbilitySystemInterface - ADD THIS
+    virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
