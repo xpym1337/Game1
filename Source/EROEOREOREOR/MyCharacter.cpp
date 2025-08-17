@@ -2,6 +2,8 @@
 
 
 #include "MyCharacter.h"
+#include "AbilitySystemComponent.h"
+#include "AttributeSet.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -9,6 +11,9 @@ AMyCharacter::AMyCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Initialize GAS components
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AttributeSet = CreateDefaultSubobject<UAttributeSet>(TEXT("AttributeSet"));
 }
 
 // Called when the game starts or when spawned
@@ -35,19 +40,27 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 UAbilitySystemComponent* AMyCharacter::GetAbilitySystemComponent() const
 {
-	// TODO: Return your actual ability system component
-	// For now, returning nullptr to fix compilation
-	return nullptr;
+	return AbilitySystemComponent;
 }
 
 void AMyCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	// TODO: Add your possession logic here
+	
+	// Initialize the Ability System for the Server
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 }
 
 void AMyCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	// TODO: Add your player state replication logic here
+	
+	// Initialize the Ability System for the Client
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 }
