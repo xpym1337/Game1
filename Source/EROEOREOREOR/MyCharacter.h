@@ -17,12 +17,16 @@ class EROEOREOREOR_API AMyCharacter : public ACharacter , public IAbilitySystemI
 public:
 	// Sets default values for this character's properties
 	AMyCharacter();
-	
+
     // IAbilitySystemInterface - ADD THIS
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+    // GAS Lifecycle Hooks - NEW
+    virtual void PossessedBy(AController* NewController) override;
+    virtual void OnRep_PlayerState() override;
 
 public:	
 	// Called every frame
