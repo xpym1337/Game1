@@ -90,11 +90,21 @@ void AMyCharacter::Tick(float DeltaTime)
 
 // Called to bind functionality to input
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
+{	
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	 if (!PlayerInputComponent)
+    {
+        return;
+    }
+
+
+
 	// Set up Enhanced Input bindings with proper casting
-	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+if (!EnhancedInputComponent) {
+    return;
+}
 
 	// Enhanced Input bindings
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AMyCharacter::Jump);
@@ -170,17 +180,11 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 {
 	// Input is a Vector2D
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
-    UE_LOG(LogTemp, Warning, TEXT("Look called: X=%f, Y=%f"), LookAxisVector.X, LookAxisVector.Y);
-
 	if (Controller != nullptr)
-	{        UE_LOG(LogTemp, Warning, TEXT("Controller valid, applying input"));
+
 		// Use the improved input method from your Aura project
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
-	}else 
-	{
-        UE_LOG(LogTemp, Error, TEXT("Controller is NULL!"));
-    }
 }
 
 void AMyCharacter::Jump()
