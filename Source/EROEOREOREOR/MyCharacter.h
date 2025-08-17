@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "AttributeSet.h"
+#include "MyAttributeSet.h"
 #include "MyCharacter.generated.h"
 
 UCLASS()
@@ -18,8 +18,12 @@ public:
 	// Sets default values for this character's properties
 	AMyCharacter();
 
-    // IAbilitySystemInterface - ADD THIS
+    // IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+    // Getter for the custom AttributeSet
+    UFUNCTION(BlueprintCallable, Category = "GAS")
+    UMyAttributeSet* GetMyAttributeSet() const;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -41,6 +45,6 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAttributeSet> AttributeSet;
+	TObjectPtr<UMyAttributeSet> AttributeSet;
 
 };

@@ -3,7 +3,7 @@
 
 #include "MyCharacter.h"
 #include "AbilitySystemComponent.h"
-#include "AttributeSet.h"
+#include "MyAttributeSet.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -13,7 +13,7 @@ AMyCharacter::AMyCharacter()
 
 	// Initialize GAS components
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AttributeSet = CreateDefaultSubobject<UAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
 }
 
 // Called when the game starts or when spawned
@@ -43,14 +43,23 @@ UAbilitySystemComponent* AMyCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+UMyAttributeSet* AMyCharacter::GetMyAttributeSet() const
+{
+	return Cast<UMyAttributeSet>(AttributeSet);
+}
+
 void AMyCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	
 	// Initialize the Ability System for the Server
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && AttributeSet)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		
+		// Ensure the AttributeSet is properly registered with the ASC
+		// The AttributeSet should be automatically discovered, but we can force it
+		AbilitySystemComponent->GetSet<UMyAttributeSet>();
 	}
 }
 
@@ -59,8 +68,12 @@ void AMyCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 	
 	// Initialize the Ability System for the Client
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && AttributeSet)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		
+		// Ensure the AttributeSet is properly registered with the ASC
+		// The AttributeSet should be automatically discovered, but we can force it
+		AbilitySystemComponent->GetSet<UMyAttributeSet>();
 	}
 }
