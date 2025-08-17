@@ -32,3 +32,22 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 }
 
+
+UAbilitySystemComponent* AMyCharacter::GetAbilitySystemComponent() const
+{
+	// TODO: Return your actual ability system component
+	// For now, returning nullptr to fix compilation
+	return nullptr;
+}
+
+void AMyCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	// TODO: Add your possession logic here
+}
+
+void AMyCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	// TODO: Add your player state replication logic here
+}
