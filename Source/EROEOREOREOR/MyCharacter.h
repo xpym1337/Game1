@@ -8,6 +8,7 @@
 #include "AbilitySystemComponent.h"
 #include "MyAttributeSet.h"
 #include "InputActionValue.h"
+#include "GameplayAbility_Dash.h"
 #include "MyCharacter.generated.h"
 
 class UInputMappingContext;
@@ -30,6 +31,10 @@ public:
     // Getter for the custom AttributeSet
     UFUNCTION(BlueprintCallable, Category = "GAS")
     UMyAttributeSet* GetMyAttributeSet() const;
+
+    // Getter for the Follow Camera
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -46,9 +51,22 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// Enhanced Input Action Functions
-	void Move(const FInputActionValue& Value);
+
+
 	void Look(const FInputActionValue& Value);
 	void Jump();
+	
+	// Individual Movement Action Functions
+	void MoveForward(const FInputActionValue& Value);
+	void MoveBackward(const FInputActionValue& Value);
+	void MoveLeft(const FInputActionValue& Value);
+	void MoveRight(const FInputActionValue& Value);
+	void ShiftPressed(const FInputActionValue& Value);
+	void ShiftReleased(const FInputActionValue& Value);
+	
+	// Dash Action Functions
+	void DashLeft(const FInputActionValue& Value);
+	void DashRight(const FInputActionValue& Value);
 
 	// Camera turn rate properties for smoother input
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -66,10 +84,30 @@ protected:
 	TObjectPtr<UInputAction> JumpAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> MoveAction;
+	TObjectPtr<UInputAction> LookAction;
+
+	// Individual Movement Input Actions
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MoveForwardAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> LookAction;
+	TObjectPtr<UInputAction> MoveBackwardAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MoveLeftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MoveRightAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ShiftAction;
+
+	// Dash Input Actions
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> DashLeftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> DashRightAction;
 
 	// Camera Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -84,5 +122,21 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMyAttributeSet> AttributeSet;
+
+	// Dash System Properties
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
+	float DashDistance = 600.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
+	float DashDuration = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
+	float DashCooldown = 2.0f;
+
+private:
+	// Dash state tracking
+	bool bIsShiftPressed = false;
+	bool bCanDash = true;
+	FTimerHandle DashCooldownTimer;
 
 };
