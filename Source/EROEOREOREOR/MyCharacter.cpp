@@ -67,43 +67,21 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	UE_LOG(LogTemp, Warning, TEXT("=== MyCharacter::BeginPlay called ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Controller: %s"), GetController() ? TEXT("Valid") : TEXT("NULL"));
-	UE_LOG(LogTemp, Warning, TEXT("DefaultMappingContext: %s"), DefaultMappingContext ? TEXT("Valid") : TEXT("NULL"));
-	
-	// Add Input Mapping Context with better error checking
+	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController found, setting up Enhanced Input"));
-		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Enhanced Input Subsystem found"));
-			
 			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				UE_LOG(LogTemp, Warning, TEXT("Mapping context added successfully"));
 			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("DefaultMappingContext is NULL! Cannot add mapping context!"));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Enhanced Input Subsystem not found!"));
 		}
 		
 		// Set input mode to Game Only for immediate control
 		FInputModeGameOnly InputModeData;
 		PlayerController->SetInputMode(InputModeData);
 		PlayerController->bShowMouseCursor = false;
-		UE_LOG(LogTemp, Warning, TEXT("Input mode set to Game Only"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("No PlayerController found in BeginPlay!"));
 	}
 }
 
@@ -111,110 +89,66 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-// // Called to bind functionality to input
-// void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-// {	
-// 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-// 	 if (!PlayerInputComponent)
-//     {
-//         return;
-//     }
-
-
-
-// 	// Set up Enhanced Input bindings with proper casting
-// 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-// if (!EnhancedInputComponent) {
-//     return;
-// }
-
-// 	// Enhanced Input bindings
-// 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AMyCharacter::Jump);
-// 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-// 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
-
-// 	// Individual WASD movement bindings
-// 	if (MoveForwardAction)
-// 		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveForward);
-// 	if (MoveBackwardAction)
-// 		EnhancedInputComponent->BindAction(MoveBackwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveBackward);
-// 	if (MoveLeftAction)
-// 		EnhancedInputComponent->BindAction(MoveLeftAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveLeft);
-// 	if (MoveRightAction)
-// 		EnhancedInputComponent->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveRight);
-
-// 	// Shift key bindings
-// 	if (ShiftAction)
-// 	{
-// 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &AMyCharacter::ShiftPressed);
-// 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &AMyCharacter::ShiftReleased);
-// 	}
-
-// 	// Dash bindings
-// 	if (DashLeftAction)
-// 		EnhancedInputComponent->BindAction(DashLeftAction, ETriggerEvent::Completed, this, &AMyCharacter::DashLeft);
-// 	if (DashRightAction)
-// 		EnhancedInputComponent->BindAction(DashRightAction, ETriggerEvent::Completed, this, &AMyCharacter::DashRight);
-// }
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {	
-    Super::SetupPlayerInputComponent(PlayerInputComponent);
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-    if (!PlayerInputComponent)
-    {
-        UE_LOG(LogTemp, Error, TEXT("PlayerInputComponent is NULL!"));
-        return;
-    }
+	if (!PlayerInputComponent)
+	{
+		return;
+	}
 
-    UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-    if (!EnhancedInputComponent) {
-        UE_LOG(LogTemp, Error, TEXT("EnhancedInputComponent cast failed!"));
-        return;
-    }
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (!EnhancedInputComponent)
+	{
+		return;
+	}
 
-    UE_LOG(LogTemp, Warning, TEXT("=== INPUT ACTION DEBUG ==="));
-    UE_LOG(LogTemp, Warning, TEXT("JumpAction: %s"), JumpAction ? TEXT("Assigned") : TEXT("NULL"));
-    UE_LOG(LogTemp, Warning, TEXT("LookAction: %s"), LookAction ? TEXT("Assigned") : TEXT("NULL"));
-    UE_LOG(LogTemp, Warning, TEXT("MoveForwardAction: %s"), MoveForwardAction ? TEXT("Assigned") : TEXT("NULL"));
-    UE_LOG(LogTemp, Warning, TEXT("MoveBackwardAction: %s"), MoveBackwardAction ? TEXT("Assigned") : TEXT("NULL"));
-    UE_LOG(LogTemp, Warning, TEXT("MoveLeftAction: %s"), MoveLeftAction ? TEXT("Assigned") : TEXT("NULL"));
-    UE_LOG(LogTemp, Warning, TEXT("MoveRightAction: %s"), MoveRightAction ? TEXT("Assigned") : TEXT("NULL"));
+	// Enhanced Input bindings
+	if (JumpAction)
+	{
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AMyCharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	}
+	
+	if (LookAction)
+	{
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
+	}
 
-    // Enhanced Input bindings
-    if (JumpAction) {
-        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AMyCharacter::Jump);
-        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-        UE_LOG(LogTemp, Warning, TEXT("Jump bindings created"));
-    }
-    
-    if (LookAction) {
-        EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
-        UE_LOG(LogTemp, Warning, TEXT("Look binding created"));
-    }
+	// Individual WASD movement bindings
+	if (MoveForwardAction)
+	{
+		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveForward);
+	}
+	if (MoveBackwardAction)
+	{
+		EnhancedInputComponent->BindAction(MoveBackwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveBackward);
+	}
+	if (MoveLeftAction)
+	{
+		EnhancedInputComponent->BindAction(MoveLeftAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveLeft);
+	}
+	if (MoveRightAction)
+	{
+		EnhancedInputComponent->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveRight);
+	}
 
-    // Individual WASD movement bindings
-    if (MoveForwardAction) {
-        EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveForward);
-        UE_LOG(LogTemp, Warning, TEXT("MoveForward binding created"));
-    }
-    if (MoveBackwardAction) {
-        EnhancedInputComponent->BindAction(MoveBackwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveBackward);
-        UE_LOG(LogTemp, Warning, TEXT("MoveBackward binding created"));
-    }
-    if (MoveLeftAction) {
-        EnhancedInputComponent->BindAction(MoveLeftAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveLeft);
-        UE_LOG(LogTemp, Warning, TEXT("MoveLeft binding created"));
-    }
-    if (MoveRightAction) {
-        EnhancedInputComponent->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveRight);
-        UE_LOG(LogTemp, Warning, TEXT("MoveRight binding created"));
-    }
+	// Shift key bindings
+	if (ShiftAction)
+	{
+		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &AMyCharacter::ShiftPressed);
+		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &AMyCharacter::ShiftReleased);
+	}
 
-    UE_LOG(LogTemp, Warning, TEXT("=== INPUT SETUP COMPLETE ==="));
+	// Dash bindings
+	if (DashLeftAction)
+		EnhancedInputComponent->BindAction(DashLeftAction, ETriggerEvent::Completed, this, &AMyCharacter::DashLeft);
+	if (DashRightAction)
+		EnhancedInputComponent->BindAction(DashRightAction, ETriggerEvent::Completed, this, &AMyCharacter::DashRight);
+
 }
 
 UAbilitySystemComponent* AMyCharacter::GetAbilitySystemComponent() const
@@ -279,7 +213,6 @@ void AMyCharacter::Jump()
 void AMyCharacter::MoveForward(const FInputActionValue& Value)
 {
 	const float InputValue = Value.Get<float>();
-	UE_LOG(LogTemp, Warning, TEXT("MoveForward called with value: %f"), InputValue);
 	
 	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
@@ -287,9 +220,6 @@ void AMyCharacter::MoveForward(const FInputActionValue& Value)
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Adding forward movement input. Direction: %s, Value: %f"), 
-			*ForwardDirection.ToString(), InputValue);
 		
 		AddMovementInput(ForwardDirection, InputValue);
 	}
@@ -298,7 +228,6 @@ void AMyCharacter::MoveForward(const FInputActionValue& Value)
 void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 {
 	const float InputValue = Value.Get<float>();
-	UE_LOG(LogTemp, Warning, TEXT("MoveBackward called with value: %f"), InputValue);
 	
 	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
@@ -306,9 +235,6 @@ void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Adding backward movement input. Direction: %s, Value: %f"), 
-			*ForwardDirection.ToString(), -InputValue);
 		
 		// Move backward (negative forward)
 		AddMovementInput(ForwardDirection, -InputValue);
@@ -318,7 +244,6 @@ void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 {
 	const float InputValue = Value.Get<float>();
-	UE_LOG(LogTemp, Warning, TEXT("MoveLeft called with value: %f"), InputValue);
 	
 	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
@@ -326,9 +251,6 @@ void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Adding left movement input. Direction: %s, Value: %f"), 
-			*RightDirection.ToString(), -InputValue);
 		
 		// Move left (negative right)
 		AddMovementInput(RightDirection, -InputValue);
@@ -338,7 +260,6 @@ void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 void AMyCharacter::MoveRight(const FInputActionValue& Value)
 {
 	const float InputValue = Value.Get<float>();
-	UE_LOG(LogTemp, Warning, TEXT("MoveRight called with value: %f"), InputValue);
 	
 	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
@@ -346,9 +267,6 @@ void AMyCharacter::MoveRight(const FInputActionValue& Value)
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Adding right movement input. Direction: %s, Value: %f"), 
-			*RightDirection.ToString(), InputValue);
 		
 		AddMovementInput(RightDirection, InputValue);
 	}
@@ -369,7 +287,6 @@ void AMyCharacter::DashLeft(const FInputActionValue& Value)
 {
 	if (!AbilitySystemComponent || !Controller)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("DashLeft: No AbilitySystemComponent or Controller"));
 		return;
 	}
 
@@ -377,14 +294,9 @@ void AMyCharacter::DashLeft(const FInputActionValue& Value)
 	FGameplayTagContainer AbilityTags;
 	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Dash")));
 	
-	if (AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GAS Dash Left activated successfully"));
-	}
-	else
+	if (!AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
 	{
 		// Fallback to direct movement if GAS not working
-		UE_LOG(LogTemp, Warning, TEXT("GAS Dash Left failed, using fallback"));
 		
 		// Get camera's right vector for lateral movement
 		FVector CameraRightVector = FollowCamera->GetRightVector();
@@ -397,8 +309,6 @@ void AMyCharacter::DashLeft(const FInputActionValue& Value)
 		// Apply dash impulse
 		FVector DashVelocity = DashDirection * DashDistance;
 		GetCharacterMovement()->Launch(DashVelocity);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Fallback Dash Left executed! Direction: %s"), *DashDirection.ToString());
 	}
 }
 
@@ -406,7 +316,6 @@ void AMyCharacter::DashRight(const FInputActionValue& Value)
 {
 	if (!AbilitySystemComponent || !Controller)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("DashRight: No AbilitySystemComponent or Controller"));
 		return;
 	}
 
@@ -414,14 +323,8 @@ void AMyCharacter::DashRight(const FInputActionValue& Value)
 	FGameplayTagContainer AbilityTags;
 	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Dash")));
 	
-	if (AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
+	if (!AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GAS Dash Right activated successfully"));
-	}
-	else
-	{
-		// Fallback to direct movement if GAS not working
-		UE_LOG(LogTemp, Warning, TEXT("GAS Dash Right failed, using fallback"));
 		
 		// Get camera's right vector for lateral movement
 		FVector CameraRightVector = FollowCamera->GetRightVector();
@@ -434,7 +337,5 @@ void AMyCharacter::DashRight(const FInputActionValue& Value)
 		// Apply dash impulse
 		FVector DashVelocity = DashDirection * DashDistance;
 		GetCharacterMovement()->Launch(DashVelocity);
-		
-		UE_LOG(LogTemp, Warning, TEXT("Fallback Dash Right executed! Direction: %s"), *DashDirection.ToString());
 	}
 }

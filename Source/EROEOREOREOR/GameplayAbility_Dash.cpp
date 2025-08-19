@@ -36,7 +36,6 @@ void UGameplayAbility_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	AMyCharacter* Character = Cast<AMyCharacter>(ActorInfo->AvatarActor.Get());
 	if (!Character)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGameplayAbility_Dash: Failed to get character"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
