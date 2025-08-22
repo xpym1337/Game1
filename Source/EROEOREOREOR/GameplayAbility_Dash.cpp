@@ -29,31 +29,8 @@ UGameplayAbility_Dash::UGameplayAbility_Dash()
 	DashCooldownTag = FGameplayTag::RequestGameplayTag(FName("Cooldown.Dash"));
 	DashImmuneTag = FGameplayTag::RequestGameplayTag(FName("Immune.Dash"));
 	
-	// Initialize all new parameters with default values - RAII principles
-	DashSpeed = 1875.0f;
-	DashInitialBurstSpeed = 2500.0f;
-	DashSpeedDecayRate = 0.15f;
-	DashVerticalVelocityPreservation = 1.0f;
-	DashDuration = 0.8f;
-	DashInitialBurstDuration = 0.1f;
-	DashCancelWindow = 0.2f;
-	UpdateFrequency = 60.0f;
-	MomentumRetention = 0.3f;
-	DashAirControl = 0.1f;
-	DashGroundFrictionOverride = 0.0f;
-	bPreserveVerticalMomentum = true;
-	bIgnoreGravityDuringDash = false;
-	bUseDistanceBasedDash = false;
-	DashTargetDistance = 800.0f;
-	DashDistanceTolerance = 50.0f;
-	InputBufferDuration = 0.1f;
-	InputDirectionInfluence = 0.3f;
-	bAllowDashDirectionOverride = true;
-	DashCameraShakeIntensity = 0.3f;
-	bEnableDashTrail = true;
-	bEnableDashScreenEffect = true;
-	bEnableDashDebugDraw = false;
-	DebugDrawDuration = 2.0f;
+	// NOTE: Default values are now set in header file only
+	// This allows Blueprint editor changes to persist
 	
 	// State initialization - RAII principles
 	DashDirection = EDashDirection::None;
@@ -227,6 +204,16 @@ void UGameplayAbility_Dash::ExecuteDash()
 {
 	check(CachedCharacter); // Epic Games style assertion for internal methods
 
+	// IMPORTANT: Get dash parameters from Character Blueprint - allows easy tuning!
+	DashSpeed = CachedCharacter->DashSpeed;
+	DashDuration = CachedCharacter->DashDuration;
+	MomentumRetention = CachedCharacter->MomentumRetention;
+	DashInitialBurstSpeed = CachedCharacter->DashInitialBurstSpeed;
+	UpdateFrequency = CachedCharacter->UpdateFrequency;
+
+	DASH_LOG(Warning, TEXT("Using Character dash values - Speed: %.1f, Duration: %.2f, Momentum: %.2f"), 
+		DashSpeed, DashDuration, MomentumRetention);
+
 	// Store input direction relative to camera at activation time
 	const FVector2D CurrentInput = CachedCharacter->GetCurrentMovementInput();
 	if (CurrentInput.IsNearlyZero())
@@ -262,7 +249,7 @@ void UGameplayAbility_Dash::ExecuteDash()
 	}
 
 	// Calculate update rate with bounds checking
-	const float ClampedUpdateFrequency = FMath::Clamp(UpdateFrequency, 10.0f, 60.0f);
+	const float ClampedUpdateFrequency = FMath::Clamp(UpdateFrequency, 10.0f, 120.0f);
 	const float UpdateRate = 1.0f / ClampedUpdateFrequency;
 
 	// Start velocity updates using Epic Games timer delegate pattern

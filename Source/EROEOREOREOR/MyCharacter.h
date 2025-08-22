@@ -72,11 +72,15 @@ public:
 	void DashLeft(const FInputActionValue& Value);
 	void DashRight(const FInputActionValue& Value);
 	
+	// Bounce Action Functions
+	void Bounce(const FInputActionValue& Value);
+	
 	// Debugging functions
 	void Move(const FInputActionValue& Value);
 	void Dash(const FInputActionValue& Value);
 	void TestKey();
 	void TestDash();
+	void TestBounce();
 
 	// Camera turn rate properties for smoother input
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -84,6 +88,35 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
+
+	// Advanced Dash System Properties - PUBLIC for GameplayAbility access
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Core", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
+	float DashSpeed = 1875.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Core", meta = (ClampMin = "0.1", ClampMax = "3.0"))
+	float DashDuration = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Core", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MomentumRetention = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Feel", meta = (ClampMin = "0.0", ClampMax = "5000.0"))
+	float DashInitialBurstSpeed = 2500.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Feel", meta = (ClampMin = "10.0", ClampMax = "120.0"))
+	float UpdateFrequency = 60.0f;
+
+	// Advanced Bounce System Properties - PUBLIC for GameplayAbility access
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Core", meta = (ClampMin = "200.0", ClampMax = "2000.0"))
+	float BounceUpwardVelocity = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Core", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HorizontalVelocityRetention = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Core", meta = (ClampMin = "0", ClampMax = "5"))
+	int32 MaxAirBounces = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Feel", meta = (ClampMin = "0.0", ClampMax = "0.5"))
+	float BounceInputWindow = 0.1f;
 
 protected:
 	// Enhanced Input
@@ -119,6 +152,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> DashRightAction;
 
+	// Bounce Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> BounceAction;
+
 	// Camera Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
@@ -133,14 +170,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMyAttributeSet> AttributeSet;
 
-	// Dash System Properties
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
+	// Legacy properties (keeping for compatibility)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Legacy", meta = (AllowPrivateAccess = "true"))
 	float DashDistance = 600.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
-	float DashDuration = 0.3f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Legacy", meta = (AllowPrivateAccess = "true"))
 	float DashCooldown = 2.0f;
 
 private:
@@ -152,8 +186,11 @@ private:
 	// Movement input tracking for dash system
 	FVector2D CurrentMovementInput;
 
-	// PERFORMANCE: Cache dash ability handle to avoid lookup delays
+	// PERFORMANCE: Cache ability handles to avoid lookup delays
 	UPROPERTY(Transient)
 	FGameplayAbilitySpecHandle CachedDashAbilityHandle;
+
+	UPROPERTY(Transient)
+	FGameplayAbilitySpecHandle CachedBounceAbilityHandle;
 
 };

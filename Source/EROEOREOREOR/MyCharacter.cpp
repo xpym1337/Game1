@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "MyAttributeSet.h"
 #include "GameplayAbility_Dash.h"
+#include "GameplayAbility_Bounce.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -71,17 +72,26 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Grant dash ability to character
+	// Grant abilities to character
 	if (AbilitySystemComponent && AbilitySystemComponent->GetAvatarActor() == this)
 	{
+		// Grant dash ability
 		FGameplayAbilitySpec DashAbilitySpec(
 			UGameplayAbility_Dash::StaticClass(),
 			1, // Level
 			INDEX_NONE, // InputID
 			this // SourceObject
 		);
-		
 		AbilitySystemComponent->GiveAbility(DashAbilitySpec);
+
+		// Grant bounce ability
+		FGameplayAbilitySpec BounceAbilitySpec(
+			UGameplayAbility_Bounce::StaticClass(),
+			1, // Level
+			INDEX_NONE, // InputID
+			this // SourceObject
+		);
+		AbilitySystemComponent->GiveAbility(BounceAbilitySpec);
 	}
 	
 	// Setup Enhanced Input
@@ -212,6 +222,16 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		UE_LOG(LogTemp, Warning, TEXT("DashRightAction is not configured"));
 	}
 
+	// Bounce binding
+	if (BounceAction)
+	{
+		EnhancedInputComponent->BindAction(BounceAction, ETriggerEvent::Started, this, &AMyCharacter::Bounce);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BounceAction is not configured"));
+	}
+
 }
 
 UAbilitySystemComponent* AMyCharacter::GetAbilitySystemComponent() const
@@ -258,6 +278,25 @@ void AMyCharacter::PossessedBy(AController* NewController)
 		{
 			UE_LOG(LogTemp, Error, TEXT("FAILED TO GRANT DASH ABILITY IN POSSESSED BY"));
 		}
+
+		// Grant bounce ability
+		FGameplayAbilitySpec BounceAbilitySpec(
+			UGameplayAbility_Bounce::StaticClass(),
+			1, // Level
+			INDEX_NONE, // InputID
+			this // SourceObject
+		);
+		
+		FGameplayAbilitySpecHandle BounceHandle = AbilitySystemComponent->GiveAbility(BounceAbilitySpec);
+		
+		if (BounceHandle.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BOUNCE ABILITY GRANTED IN POSSESSED BY"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("FAILED TO GRANT BOUNCE ABILITY IN POSSESSED BY"));
+		}
 	}
 }
 
@@ -297,11 +336,13 @@ void AMyCharacter::Jump()
 // Camera-Relative Movement Functions
 void AMyCharacter::MoveForward(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during dash
-	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	// CRITICAL FIX: Block movement input during abilities
+	if (AbilitySystemComponent && 
+		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
+		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveForward blocked - currently dashing"));
-		return; // Don't process movement input during dash
+		UE_LOG(LogTemp, Warning, TEXT("MoveForward blocked - currently using ability"));
+		return; // Don't process movement input during abilities
 	}
 	
 	const float InputValue = Value.Get<float>();
@@ -322,11 +363,13 @@ void AMyCharacter::MoveForward(const FInputActionValue& Value)
 
 void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during dash
-	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	// CRITICAL FIX: Block movement input during abilities
+	if (AbilitySystemComponent && 
+		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
+		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveBackward blocked - currently dashing"));
-		return; // Don't process movement input during dash
+		UE_LOG(LogTemp, Warning, TEXT("MoveBackward blocked - currently using ability"));
+		return; // Don't process movement input during abilities
 	}
 	
 	const float InputValue = Value.Get<float>();
@@ -348,11 +391,13 @@ void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 
 void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during dash
-	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	// CRITICAL FIX: Block movement input during abilities
+	if (AbilitySystemComponent && 
+		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
+		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveLeft blocked - currently dashing"));
-		return; // Don't process movement input during dash
+		UE_LOG(LogTemp, Warning, TEXT("MoveLeft blocked - currently using ability"));
+		return; // Don't process movement input during abilities
 	}
 	
 	const float InputValue = Value.Get<float>();
@@ -374,11 +419,13 @@ void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 
 void AMyCharacter::MoveRight(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during dash
-	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	// CRITICAL FIX: Block movement input during abilities
+	if (AbilitySystemComponent && 
+		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
+		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveRight blocked - currently dashing"));
-		return; // Don't process movement input during dash
+		UE_LOG(LogTemp, Warning, TEXT("MoveRight blocked - currently using ability"));
+		return; // Don't process movement input during abilities
 	}
 	
 	const float InputValue = Value.Get<float>();
@@ -475,6 +522,11 @@ void AMyCharacter::TestDash()
 	UE_LOG(LogTemp, Log, TEXT("TestDash debug function called"));
 }
 
+void AMyCharacter::TestBounce()
+{
+	UE_LOG(LogTemp, Log, TEXT("TestBounce debug function called"));
+}
+
 // Production-ready dash methods - clean GAS implementation
 
 void AMyCharacter::DashRight(const FInputActionValue& Value)
@@ -520,5 +572,84 @@ void AMyCharacter::DashRight(const FInputActionValue& Value)
 	if (!bActivated)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DashRight: Failed to activate cached dash ability"));
+	}
+}
+
+void AMyCharacter::Bounce(const FInputActionValue& Value)
+{
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Bounce: AbilitySystemComponent is null"));
+		return;
+	}
+
+	// ENHANCED DEBUGGING: Check ability system state
+	UE_LOG(LogTemp, Log, TEXT("Bounce: Attempting bounce activation. ASC valid: %s"), 
+		AbilitySystemComponent ? TEXT("true") : TEXT("false"));
+
+	// PERFORMANCE: Use cached handle to avoid lookup delays
+	if (!CachedBounceAbilityHandle.IsValid())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Bounce: Caching bounce ability handle"));
+		
+		// Cache the handle on first use
+		int32 BounceAbilityCount = 0;
+		for (FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+		{
+			if (Spec.Ability && Spec.Ability->IsA<UGameplayAbility_Bounce>())
+			{
+				CachedBounceAbilityHandle = Spec.Handle;
+				BounceAbilityCount++;
+				UE_LOG(LogTemp, Log, TEXT("Bounce: Found and cached bounce ability handle"));
+				break;
+			}
+		}
+		
+		if (BounceAbilityCount == 0)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Bounce: No UGameplayAbility_Bounce found in activatable abilities"));
+			
+			// DEBUG: List all available abilities
+			for (const FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+			{
+				if (Spec.Ability)
+				{
+					UE_LOG(LogTemp, Log, TEXT("Available Ability: %s"), *Spec.Ability->GetName());
+				}
+			}
+		}
+	}
+
+	if (!CachedBounceAbilityHandle.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Bounce: CachedBounceAbilityHandle is invalid - ability not granted"));
+		return;
+	}
+
+	// Check if ability system is initialized
+	if (!AbilitySystemComponent->AbilityActorInfo.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bounce: AbilityActorInfo is not valid - ASC not properly initialized"));
+		return;
+	}
+
+	// Epic Games standard: Use gameplay tags to communicate input
+	FGameplayTagContainer InputTags;
+	InputTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Input.Bounce")));
+	
+	// Apply input tag temporarily
+	AbilitySystemComponent->AddLooseGameplayTags(InputTags);
+
+	// IMMEDIATE ACTIVATION: Use cached handle for instant response
+	const bool bActivated = AbilitySystemComponent->TryActivateAbility(CachedBounceAbilityHandle);
+	
+	// Remove input tag after activation attempt
+	AbilitySystemComponent->RemoveLooseGameplayTags(InputTags);
+	
+	UE_LOG(LogTemp, Log, TEXT("Bounce: Activation result: %s"), bActivated ? TEXT("SUCCESS") : TEXT("FAILED"));
+	
+	if (!bActivated)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bounce: TryActivateAbility failed despite CanActivateAbility returning true"));
 	}
 }
