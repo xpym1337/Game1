@@ -35,6 +35,10 @@ public:
     // Getter for the Follow Camera
     UFUNCTION(BlueprintCallable, Category = "Camera")
     UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+    // Getter for current movement input (for dash system)
+    UFUNCTION(BlueprintCallable, Category = "Movement")
+    FVector2D GetCurrentMovementInput() const { return CurrentMovementInput; }
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -67,6 +71,12 @@ public:
 	// Dash Action Functions
 	void DashLeft(const FInputActionValue& Value);
 	void DashRight(const FInputActionValue& Value);
+	
+	// Debugging functions
+	void Move(const FInputActionValue& Value);
+	void Dash(const FInputActionValue& Value);
+	void TestKey();
+	void TestDash();
 
 	// Camera turn rate properties for smoother input
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -138,5 +148,12 @@ private:
 	bool bIsShiftPressed = false;
 	bool bCanDash = true;
 	FTimerHandle DashCooldownTimer;
+
+	// Movement input tracking for dash system
+	FVector2D CurrentMovementInput;
+
+	// PERFORMANCE: Cache dash ability handle to avoid lookup delays
+	UPROPERTY(Transient)
+	FGameplayAbilitySpecHandle CachedDashAbilityHandle;
 
 };

@@ -34,9 +34,10 @@ AMyCharacter::AMyCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+	// Configure character movement for camera-relative system
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Character faces movement direction
+	GetCharacterMovement()->bUseControllerDesiredRotation = false; // Don't rotate to controller
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // How fast character rotates to face movement
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
@@ -60,6 +61,9 @@ AMyCharacter::AMyCharacter()
 	// Initialize GAS components
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+
+	// Initialize movement input tracking
+	CurrentMovementInput = FVector2D::ZeroVector;
 }
 
 // Called when the game starts or when spawned
@@ -67,7 +71,20 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Add Input Mapping Context
+	// Grant dash ability to character
+	if (AbilitySystemComponent && AbilitySystemComponent->GetAvatarActor() == this)
+	{
+		FGameplayAbilitySpec DashAbilitySpec(
+			UGameplayAbility_Dash::StaticClass(),
+			1, // Level
+			INDEX_NONE, // InputID
+			this // SourceObject
+		);
+		
+		AbilitySystemComponent->GiveAbility(DashAbilitySpec);
+	}
+	
+	// Setup Enhanced Input
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -78,7 +95,7 @@ void AMyCharacter::BeginPlay()
 			}
 		}
 		
-		// Set input mode to Game Only for immediate control
+		// Set input mode for game control
 		FInputModeGameOnly InputModeData;
 		PlayerController->SetInputMode(InputModeData);
 		PlayerController->bShowMouseCursor = false;
@@ -89,6 +106,8 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	// Production-ready Tick - minimal processing only
 }
 
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -112,28 +131,55 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AMyCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("JumpAction is not configured"));
+	}
 	
 	if (LookAction)
 	{
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LookAction is not configured"));
+	}
 
-	// Individual WASD movement bindings
+	// Movement input bindings with proper error handling
 	if (MoveForwardAction)
 	{
 		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveForward);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveForwardAction is not configured"));
+	}
+	
 	if (MoveBackwardAction)
 	{
 		EnhancedInputComponent->BindAction(MoveBackwardAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveBackward);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveBackwardAction is not configured"));
+	}
+	
 	if (MoveLeftAction)
 	{
 		EnhancedInputComponent->BindAction(MoveLeftAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveLeft);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveLeftAction is not configured"));
+	}
+	
 	if (MoveRightAction)
 	{
 		EnhancedInputComponent->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &AMyCharacter::MoveRight);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveRightAction is not configured"));
 	}
 
 	// Shift key bindings
@@ -142,12 +188,29 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &AMyCharacter::ShiftPressed);
 		EnhancedInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &AMyCharacter::ShiftReleased);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ShiftAction is not configured"));
+	}
 
-	// Dash bindings
+	// Dash bindings with immediate response
 	if (DashLeftAction)
-		EnhancedInputComponent->BindAction(DashLeftAction, ETriggerEvent::Completed, this, &AMyCharacter::DashLeft);
+	{
+		EnhancedInputComponent->BindAction(DashLeftAction, ETriggerEvent::Started, this, &AMyCharacter::DashLeft);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashLeftAction is not configured"));
+	}
+	
 	if (DashRightAction)
-		EnhancedInputComponent->BindAction(DashRightAction, ETriggerEvent::Completed, this, &AMyCharacter::DashRight);
+	{
+		EnhancedInputComponent->BindAction(DashRightAction, ETriggerEvent::Started, this, &AMyCharacter::DashRight);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashRightAction is not configured"));
+	}
 
 }
 
@@ -173,6 +236,28 @@ void AMyCharacter::PossessedBy(AController* NewController)
 		// Ensure the AttributeSet is properly registered with the ASC
 		// The AttributeSet should be automatically discovered, but we can force it
 		AbilitySystemComponent->GetSet<UMyAttributeSet>();
+		
+		// CRITICAL: Grant abilities during possession (server-side)
+		UE_LOG(LogTemp, Error, TEXT("POSSESSED BY - GRANTING ABILITIES"));
+		
+		// Grant dash ability
+		FGameplayAbilitySpec DashAbilitySpec(
+			UGameplayAbility_Dash::StaticClass(),
+			1, // Level
+			INDEX_NONE, // InputID
+			this // SourceObject
+		);
+		
+		FGameplayAbilitySpecHandle DashHandle = AbilitySystemComponent->GiveAbility(DashAbilitySpec);
+		
+		if (DashHandle.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("DASH ABILITY GRANTED IN POSSESSED BY"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("FAILED TO GRANT DASH ABILITY IN POSSESSED BY"));
+		}
 	}
 }
 
@@ -209,66 +294,107 @@ void AMyCharacter::Jump()
 	Super::Jump();
 }
 
-// Individual Movement Functions
+// Camera-Relative Movement Functions
 void AMyCharacter::MoveForward(const FInputActionValue& Value)
 {
+	// CRITICAL FIX: Block movement input during dash
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveForward blocked - currently dashing"));
+		return; // Don't process movement input during dash
+	}
+	
 	const float InputValue = Value.Get<float>();
 	
-	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
+	// Update movement input tracking (Y = forward/backward)
+	CurrentMovementInput.Y = InputValue;
+	
+	if (FollowCamera != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
-		// Find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		// Get camera forward direction (projected to ground)
+		FVector CameraForward = FollowCamera->GetForwardVector();
+		CameraForward.Z = 0.0f; // Remove vertical component
+		CameraForward.Normalize();
 		
-		AddMovementInput(ForwardDirection, InputValue);
+		AddMovementInput(CameraForward, InputValue);
 	}
 }
 
 void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 {
+	// CRITICAL FIX: Block movement input during dash
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveBackward blocked - currently dashing"));
+		return; // Don't process movement input during dash
+	}
+	
 	const float InputValue = Value.Get<float>();
 	
-	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
+	// Update movement input tracking (Y = forward/backward, negative for backward)
+	CurrentMovementInput.Y = -InputValue;
+	
+	if (FollowCamera != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
-		// Find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		// Get camera forward direction (projected to ground)
+		FVector CameraForward = FollowCamera->GetForwardVector();
+		CameraForward.Z = 0.0f; // Remove vertical component
+		CameraForward.Normalize();
 		
 		// Move backward (negative forward)
-		AddMovementInput(ForwardDirection, -InputValue);
+		AddMovementInput(CameraForward, -InputValue);
 	}
 }
 
 void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 {
+	// CRITICAL FIX: Block movement input during dash
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveLeft blocked - currently dashing"));
+		return; // Don't process movement input during dash
+	}
+	
 	const float InputValue = Value.Get<float>();
 	
-	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
+	// Update movement input tracking (X = left/right, negative for left)
+	CurrentMovementInput.X = -InputValue;
+	
+	if (FollowCamera != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
-		// Find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		// Get camera right direction (projected to ground)
+		FVector CameraRight = FollowCamera->GetRightVector();
+		CameraRight.Z = 0.0f; // Remove vertical component
+		CameraRight.Normalize();
 		
-		// Move left (negative right)
-		AddMovementInput(RightDirection, -InputValue);
+		// Move left (negative right - strafe left relative to camera)
+		AddMovementInput(CameraRight, -InputValue);
 	}
 }
 
 void AMyCharacter::MoveRight(const FInputActionValue& Value)
 {
+	// CRITICAL FIX: Block movement input during dash
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MoveRight blocked - currently dashing"));
+		return; // Don't process movement input during dash
+	}
+	
 	const float InputValue = Value.Get<float>();
 	
-	if (Controller != nullptr && FMath::Abs(InputValue) > 0.0f)
+	// Update movement input tracking (X = left/right, positive for right)
+	CurrentMovementInput.X = InputValue;
+	
+	if (FollowCamera != nullptr && FMath::Abs(InputValue) > 0.0f)
 	{
-		// Find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		// Get camera right direction (projected to ground)
+		FVector CameraRight = FollowCamera->GetRightVector();
+		CameraRight.Z = 0.0f; // Remove vertical component
+		CameraRight.Normalize();
 		
-		AddMovementInput(RightDirection, InputValue);
+		// Move right (positive right - strafe right relative to camera)
+		AddMovementInput(CameraRight, InputValue);
 	}
 }
 
@@ -282,60 +408,117 @@ void AMyCharacter::ShiftReleased(const FInputActionValue& Value)
 	bIsShiftPressed = false;
 }
 
-// Camera-Relative Dash Functions using GAS
 void AMyCharacter::DashLeft(const FInputActionValue& Value)
 {
-	if (!AbilitySystemComponent || !Controller)
+	if (!AbilitySystemComponent)
 	{
 		return;
 	}
 
-	// Try to activate dash ability with left direction
-	FGameplayTagContainer AbilityTags;
-	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Dash")));
-	
-	if (!AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
+	// PERFORMANCE: Use cached handle to avoid lookup delays
+	if (!CachedDashAbilityHandle.IsValid())
 	{
-		// Fallback to direct movement if GAS not working
-		
-		// Get camera's right vector for lateral movement
-		FVector CameraRightVector = FollowCamera->GetRightVector();
-		CameraRightVector.Z = 0.0f; // Keep movement horizontal
-		CameraRightVector.Normalize();
+		// Cache the handle on first use
+		for (FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+		{
+			if (Spec.Ability && Spec.Ability->IsA<UGameplayAbility_Dash>())
+			{
+				CachedDashAbilityHandle = Spec.Handle;
+				break;
+			}
+		}
+	}
 
-		// Dash Left: Move in negative camera right direction
-		FVector DashDirection = -CameraRightVector;
-		
-		// Apply dash impulse
-		FVector DashVelocity = DashDirection * DashDistance;
-		GetCharacterMovement()->Launch(DashVelocity);
+	if (!CachedDashAbilityHandle.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashLeft: No dash ability found to cache"));
+		return;
+	}
+
+	// Epic Games standard: Use gameplay tags to communicate direction
+	FGameplayTagContainer DirectionTags;
+	DirectionTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Input.Dash.Left")));
+	
+	// Apply direction tag temporarily
+	AbilitySystemComponent->AddLooseGameplayTags(DirectionTags);
+
+	// IMMEDIATE ACTIVATION: Use cached handle for instant response
+	bool bActivated = AbilitySystemComponent->TryActivateAbility(CachedDashAbilityHandle);
+	
+	// Remove direction tag after activation attempt
+	AbilitySystemComponent->RemoveLooseGameplayTags(DirectionTags);
+	
+	if (!bActivated)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashLeft: Failed to activate cached dash ability"));
 	}
 }
 
+// Debug functions for testing - minimal implementations
+void AMyCharacter::Move(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Log, TEXT("Move debug function called"));
+}
+
+void AMyCharacter::Dash(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Log, TEXT("Dash debug function called"));
+}
+
+void AMyCharacter::TestKey()
+{
+	UE_LOG(LogTemp, Log, TEXT("TestKey debug function called"));
+}
+
+void AMyCharacter::TestDash()
+{
+	UE_LOG(LogTemp, Log, TEXT("TestDash debug function called"));
+}
+
+// Production-ready dash methods - clean GAS implementation
+
 void AMyCharacter::DashRight(const FInputActionValue& Value)
 {
-	if (!AbilitySystemComponent || !Controller)
+	if (!AbilitySystemComponent)
 	{
 		return;
 	}
 
-	// Try to activate dash ability with right direction
-	FGameplayTagContainer AbilityTags;
-	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Dash")));
-	
-	if (!AbilitySystemComponent->TryActivateAbilitiesByTag(AbilityTags))
+	// PERFORMANCE: Use cached handle to avoid lookup delays
+	if (!CachedDashAbilityHandle.IsValid())
 	{
-		
-		// Get camera's right vector for lateral movement
-		FVector CameraRightVector = FollowCamera->GetRightVector();
-		CameraRightVector.Z = 0.0f; // Keep movement horizontal
-		CameraRightVector.Normalize();
+		// Cache the handle on first use
+		for (FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
+		{
+			if (Spec.Ability && Spec.Ability->IsA<UGameplayAbility_Dash>())
+			{
+				CachedDashAbilityHandle = Spec.Handle;
+				break;
+			}
+		}
+	}
 
-		// Dash Right: Move in positive camera right direction
-		FVector DashDirection = CameraRightVector;
-		
-		// Apply dash impulse
-		FVector DashVelocity = DashDirection * DashDistance;
-		GetCharacterMovement()->Launch(DashVelocity);
+	if (!CachedDashAbilityHandle.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashRight: No dash ability found to cache"));
+		return;
+	}
+
+	// Epic Games standard: Use gameplay tags to communicate direction
+	FGameplayTagContainer DirectionTags;
+	DirectionTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Input.Dash.Right")));
+	
+	// Apply direction tag temporarily
+	AbilitySystemComponent->AddLooseGameplayTags(DirectionTags);
+
+	// IMMEDIATE ACTIVATION: Use cached handle for instant response
+	bool bActivated = AbilitySystemComponent->TryActivateAbility(CachedDashAbilityHandle);
+	
+	// Remove direction tag after activation attempt
+	AbilitySystemComponent->RemoveLooseGameplayTags(DirectionTags);
+	
+	if (!bActivated)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DashRight: Failed to activate cached dash ability"));
 	}
 }
