@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
+#include "Curves/CurveFloat.h"
 
 // Conditional logging - Epic Games standard approach using LogTemp
 #if !UE_BUILD_SHIPPING
@@ -38,6 +39,8 @@ UGameplayAbility_Dash::UGameplayAbility_Dash()
 	bIsActiveDash = false;
 	DashStartTime = 0.0f;
 	StoredInputDirection = FVector2D::ZeroVector;
+	LoadedDashSpeedCurve = nullptr;
+	LoadedDashDirectionCurve = nullptr;
 }
 
 bool UGameplayAbility_Dash::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
@@ -105,17 +108,20 @@ void UGameplayAbility_Dash::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		return;
 	}
 
-	// Cache character reference
+	// Cache character reference - EPIC GAMES STANDARD: Use weak pointer for actor references
 	CachedCharacter = Cast<AMyCharacter>(ActorInfo->AvatarActor.Get());
-	if (!CachedCharacter)
+	if (!CachedCharacter.IsValid())
 	{
 		DASH_LOG(Error, TEXT("ActivateAbility: Invalid character cast"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
+	// EPIC GAMES STANDARD: Load curve assets asynchronously
+	LoadCurveAssets();
+
 	// Final validation with cached character
-	if (!ValidateActivationRequirements(CachedCharacter))
+	if (!ValidateActivationRequirements(CachedCharacter.Get()))
 	{
 		DASH_LOG(Error, TEXT("ActivateAbility: Validation failed with cached character"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -138,10 +144,18 @@ void UGameplayAbility_Dash::EndAbility(const FGameplayAbilitySpecHandle Handle, 
 		World->GetTimerManager().ClearTimer(VelocityUpdateTimer);
 	}
 
-	// Apply momentum retention if dash completed naturally
-	if (!bWasCancelled && CachedCharacter)
+	// EPIC GAMES STANDARD: Clean up streamable handles properly
+	if (CurveLoadHandle.IsValid())
 	{
-		if (UCharacterMovementComponent* MovementComponent = CachedCharacter->GetCharacterMovement())
+		CurveLoadHandle->CancelHandle();
+		CurveLoadHandle.Reset();
+	}
+
+	// Apply momentum retention if dash completed naturally
+	AMyCharacter* Character = CachedCharacter.Get();
+	if (!bWasCancelled && Character)
+	{
+		if (UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement())
 		{
 			FVector CurrentVelocity = MovementComponent->Velocity;
 			CurrentVelocity.X *= MomentumRetention;
@@ -202,20 +216,21 @@ bool UGameplayAbility_Dash::ValidateActivationRequirements(const AMyCharacter* I
 
 void UGameplayAbility_Dash::ExecuteDash()
 {
-	check(CachedCharacter); // Epic Games style assertion for internal methods
+	AMyCharacter* Character = CachedCharacter.Get();
+	check(Character); // Epic Games style assertion for internal methods
 
 	// IMPORTANT: Get dash parameters from Character Blueprint - allows easy tuning!
-	DashSpeed = CachedCharacter->DashSpeed;
-	DashDuration = CachedCharacter->DashDuration;
-	MomentumRetention = CachedCharacter->MomentumRetention;
-	DashInitialBurstSpeed = CachedCharacter->DashInitialBurstSpeed;
-	UpdateFrequency = CachedCharacter->UpdateFrequency;
+	DashSpeed = Character->DashSpeed;
+	DashDuration = Character->DashDuration;
+	MomentumRetention = Character->MomentumRetention;
+	DashInitialBurstSpeed = Character->DashInitialBurstSpeed;
+	UpdateFrequency = Character->UpdateFrequency;
 
 	DASH_LOG(Warning, TEXT("Using Character dash values - Speed: %.1f, Duration: %.2f, Momentum: %.2f"), 
 		DashSpeed, DashDuration, MomentumRetention);
 
 	// Store input direction relative to camera at activation time
-	const FVector2D CurrentInput = CachedCharacter->GetCurrentMovementInput();
+	const FVector2D CurrentInput = Character->GetCurrentMovementInput();
 	if (CurrentInput.IsNearlyZero())
 	{
 		// Default to pure side movement if no input - Epic Games default behavior pattern
@@ -232,17 +247,24 @@ void UGameplayAbility_Dash::ExecuteDash()
 	DashStartTime = GetWorld()->GetTimeSeconds();
 
 	// IMMEDIATE VELOCITY APPLICATION - No delay for first frame!
-	UCharacterMovementComponent* MovementComponent = CachedCharacter->GetCharacterMovement();
+	UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
 	if (MovementComponent)
 	{
 		// Calculate initial direction and speed for immediate response
-		const FVector DashDirectionVector = CalculateCameraRelativeDashDirection(CachedCharacter);
+		const FVector DashDirectionVector = CalculateCameraRelativeDashDirection(Character);
 		const float InitialSpeed = CalculateCurrentDashSpeed(0.0f); // Start at full speed
 		
 		// Apply velocity immediately - critical for responsive feel
 		FVector DashVelocity = DashDirectionVector * InitialSpeed;
 		DashVelocity.Z = MovementComponent->Velocity.Z; // Preserve gravity
 		MovementComponent->Velocity = DashVelocity;
+		
+		// CAPTURE INITIAL HIGH-VELOCITY SNAPSHOT for momentum transfer
+		if (UVelocitySnapshotComponent* SnapshotComponent = Character->GetVelocitySnapshotComponent())
+		{
+			const FGameplayTag DashTag = FGameplayTag::RequestGameplayTag(FName("State.Dashing"));
+			SnapshotComponent->CaptureSnapshot(DashVelocity, EVelocitySource::Dash, DashTag);
+		}
 		
 		DASH_LOG(Log, TEXT("ExecuteDash: IMMEDIATE velocity applied - Direction: (%.2f, %.2f, %.2f), Speed: %.2f"), 
 			DashDirectionVector.X, DashDirectionVector.Y, DashDirectionVector.Z, InitialSpeed);
@@ -308,14 +330,10 @@ float UGameplayAbility_Dash::CalculateCurrentDashSpeed(const float InAlpha) cons
 	
 	float CurrentSpeed = FMath::Clamp(DashSpeed, MIN_DASH_SPEED, MAX_DASH_SPEED);
 	
-	// Check if curve is loaded and valid
-	if (DashSpeedCurve.IsValid() && DashSpeedCurve.LoadSynchronous())
+	// Check if curve is loaded and valid - EPIC GAMES STANDARD: Use loaded curve assets
+	if (IsValid(LoadedDashSpeedCurve))
 	{
-		const UCurveFloat* LoadedCurve = DashSpeedCurve.Get();
-		if (LoadedCurve)
-		{
-			CurrentSpeed *= LoadedCurve->GetFloatValue(ClampedAlpha);
-		}
+		CurrentSpeed *= LoadedDashSpeedCurve->GetFloatValue(ClampedAlpha);
 	}
 	else
 	{
@@ -331,7 +349,8 @@ float UGameplayAbility_Dash::CalculateCurrentDashSpeed(const float InAlpha) cons
 void UGameplayAbility_Dash::UpdateDashVelocity()
 {
 	// Early exit guards - Epic Games pattern
-	if (!bIsActiveDash || !CachedCharacter)
+	AMyCharacter* Character = CachedCharacter.Get();
+	if (!bIsActiveDash || !Character)
 	{
 		return;
 	}
@@ -349,7 +368,7 @@ void UGameplayAbility_Dash::UpdateDashVelocity()
 	}
 
 	// Component validation - defensive programming
-	UCharacterMovementComponent* MovementComponent = CachedCharacter->GetCharacterMovement();
+	UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
 	if (!MovementComponent)
 	{
 		DASH_LOG(Warning, TEXT("UpdateDashVelocity: Lost movement component - ending dash"));
@@ -358,13 +377,23 @@ void UGameplayAbility_Dash::UpdateDashVelocity()
 	}
 
 	// Calculate direction and speed
-	const FVector DashDirectionVector = CalculateCameraRelativeDashDirection(CachedCharacter);
+	const FVector DashDirectionVector = CalculateCameraRelativeDashDirection(Character);
 	const float CurrentSpeed = CalculateCurrentDashSpeed(Alpha);
 
 	// Apply velocity with Z-preservation - critical for gravity
 	FVector DashVelocity = DashDirectionVector * CurrentSpeed;
 	DashVelocity.Z = MovementComponent->Velocity.Z;
 	MovementComponent->Velocity = DashVelocity;
+
+	// CAPTURE VELOCITY SNAPSHOT for momentum transfer (only during strong dash phase)
+	if (Alpha < 0.8f && CurrentSpeed > 500.0f) // Only capture meaningful velocity
+	{
+		if (UVelocitySnapshotComponent* SnapshotComponent = Character->GetVelocitySnapshotComponent())
+		{
+			const FGameplayTag DashTag = FGameplayTag::RequestGameplayTag(FName("State.Dashing"));
+			SnapshotComponent->CaptureSnapshot(DashVelocity, EVelocitySource::Dash, DashTag);
+		}
+	}
 }
 
 void UGameplayAbility_Dash::FinalizeDash()
@@ -383,6 +412,79 @@ void UGameplayAbility_Dash::FinalizeDash()
 	if (IsActive())
 	{
 		K2_EndAbility();
+	}
+}
+
+// EPIC GAMES STANDARD: Async curve loading following proper asset management patterns
+void UGameplayAbility_Dash::LoadCurveAssets()
+{
+	TArray<FSoftObjectPath> AssetsToLoad;
+
+	// Collect assets that need loading - EPIC GAMES STANDARD: Only load what's needed
+	if (!DashSpeedCurve.IsNull() && !IsValid(LoadedDashSpeedCurve))
+	{
+		AssetsToLoad.Add(DashSpeedCurve.ToSoftObjectPath());
+	}
+	
+	if (!DashDirectionCurve.IsNull() && !IsValid(LoadedDashDirectionCurve))
+	{
+		AssetsToLoad.Add(DashDirectionCurve.ToSoftObjectPath());
+	}
+
+	// Early exit if no assets to load
+	if (AssetsToLoad.Num() == 0)
+	{
+		return;
+	}
+
+	// Load assets asynchronously - EPIC GAMES STANDARD: Use StreamableManager
+	UAssetManager& AssetManager = UAssetManager::Get();
+	CurveLoadHandle = AssetManager.LoadAssetList(AssetsToLoad, 
+		FStreamableDelegate::CreateUObject(this, &UGameplayAbility_Dash::OnCurveAssetsLoaded));
+
+	if (CurveLoadHandle.IsValid())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Dash: Started loading %d curve assets"), AssetsToLoad.Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dash: Failed to start curve asset loading"));
+	}
+}
+
+void UGameplayAbility_Dash::OnCurveAssetsLoaded()
+{
+	// EPIC GAMES STANDARD: Safe asset loading with proper validation
+	if (!DashSpeedCurve.IsNull())
+	{
+		LoadedDashSpeedCurve = DashSpeedCurve.LoadSynchronous();
+		if (IsValid(LoadedDashSpeedCurve))
+		{
+			UE_LOG(LogTemp, Log, TEXT("Dash: DashSpeedCurve loaded successfully"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Dash: Failed to load DashSpeedCurve"));
+		}
+	}
+
+	if (!DashDirectionCurve.IsNull())
+	{
+		LoadedDashDirectionCurve = DashDirectionCurve.LoadSynchronous();
+		if (IsValid(LoadedDashDirectionCurve))
+		{
+			UE_LOG(LogTemp, Log, TEXT("Dash: DashDirectionCurve loaded successfully"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Dash: Failed to load DashDirectionCurve"));
+		}
+	}
+
+	// Clean up handle after loading
+	if (CurveLoadHandle.IsValid())
+	{
+		CurveLoadHandle.Reset();
 	}
 }
 
@@ -413,12 +515,13 @@ float UGameplayAbility_Dash::GetCurrentDashProgress() const
 
 FVector UGameplayAbility_Dash::GetCurrentDashDirection() const
 {
-	if (!bIsActiveDash || !CachedCharacter)
+	const AMyCharacter* Character = CachedCharacter.Get();
+	if (!bIsActiveDash || !Character)
 	{
 		return FVector::ZeroVector;
 	}
 
-	return CalculateCameraRelativeDashDirection(CachedCharacter);
+	return CalculateCameraRelativeDashDirection(Character);
 }
 
 float UGameplayAbility_Dash::GetCurrentDashSpeed() const

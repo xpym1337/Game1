@@ -9,6 +9,7 @@
 #include "MyAttributeSet.h"
 #include "InputActionValue.h"
 #include "GameplayAbility_Dash.h"
+#include "VelocitySnapshotComponent.h"
 #include "MyCharacter.generated.h"
 
 class UInputMappingContext;
@@ -39,7 +40,16 @@ public:
     // Getter for current movement input (for dash system)
     UFUNCTION(BlueprintCallable, Category = "Movement")
     FVector2D GetCurrentMovementInput() const { return CurrentMovementInput; }
+
+    // Getter for velocity snapshot component (for dash-bounce combo system)
+    UFUNCTION(BlueprintPure, Category = "Movement")
+    UVelocitySnapshotComponent* GetVelocitySnapshotComponent() const { return VelocitySnapshotComponent; }
+
+	// Override Landed to broadcast delegate (uses built-in ACharacter::LandedDelegate)
+	virtual void Landed(const FHitResult& Hit) override;
+
 protected:
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -169,6 +179,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMyAttributeSet> AttributeSet;
+
+	// Dash-Bounce Combo System Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UVelocitySnapshotComponent> VelocitySnapshotComponent;
 
 	// Legacy properties (keeping for compatibility)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Legacy", meta = (AllowPrivateAccess = "true"))

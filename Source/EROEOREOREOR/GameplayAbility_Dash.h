@@ -6,6 +6,8 @@
 #include "Abilities/GameplayAbility.h"
 #include "GameplayTagContainer.h"
 #include "Engine/TimerHandle.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "GameplayAbility_Dash.generated.h"
 
 // Forward declarations
@@ -162,13 +164,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Input")
 	bool bAllowDashDirectionOverride = true;
 
-	// DASH CURVE CONTROL - Advanced easing options
+	// DASH CURVE CONTROL - Epic Games soft reference pattern for proper asset loading
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Curves", 
-		meta = (DisplayName = "Speed Curve (Optional)"))
+		meta = (DisplayName = "Speed Curve (Optional)", AllowedClasses = "/Script/Engine.CurveFloat"))
 	TSoftObjectPtr<UCurveFloat> DashSpeedCurve;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Curves", 
-		meta = (DisplayName = "Direction Curve (Optional)"))
+		meta = (DisplayName = "Direction Curve (Optional)", AllowedClasses = "/Script/Engine.CurveFloat"))
 	TSoftObjectPtr<UCurveFloat> DashDirectionCurve;
 
 	// DASH EFFECTS CONTROL - VFX/SFX integration points
@@ -213,20 +215,36 @@ private:
 	FVector CalculateCameraRelativeDashDirection(const AMyCharacter* InCharacter) const;
 	float CalculateCurrentDashSpeed(const float InAlpha) const;
 
-	// State Management - RAII principles
+	// Core Implementation - Single responsibility
+	void LoadCurveAssets();
+	void OnCurveAssetsLoaded();
+
+	// State Management - RAII principles with proper Epic Games standards
 	UPROPERTY(Transient)
 	EDashDirection DashDirection;
 
+	// CRITICAL: Use TWeakObjectPtr for actor references to prevent dangling pointers
 	UPROPERTY(Transient)
-	TObjectPtr<AMyCharacter> CachedCharacter;
+	TWeakObjectPtr<AMyCharacter> CachedCharacter;
 
 	UPROPERTY(Transient)
 	FVector2D StoredInputDirection;
 
+	// EPIC GAMES STANDARD: Curve asset loading state management
+	UPROPERTY(Transient)
+	TObjectPtr<UCurveFloat> LoadedDashSpeedCurve;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UCurveFloat> LoadedDashDirectionCurve;
+
 	// Runtime State
 	FTimerHandle VelocityUpdateTimer;
+	FTimerHandle CurveLoadTimer;
 	float DashStartTime;
 	bool bIsActiveDash;
+
+	// EPIC GAMES STANDARD: Asset loading streamable handle management
+	TSharedPtr<FStreamableHandle> CurveLoadHandle;
 
 	// Constants - Epic Games style
 	static constexpr float DEFAULT_UPDATE_RATE = 1.0f / 30.0f;

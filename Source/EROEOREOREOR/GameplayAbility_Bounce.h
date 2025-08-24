@@ -6,11 +6,15 @@
 #include "Abilities/GameplayAbility.h"
 #include "GameplayTagContainer.h"
 #include "Engine/TimerHandle.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
+#include "VelocitySnapshotComponent.h"
 #include "GameplayAbility_Bounce.generated.h"
 
 // Forward declarations
 class AMyCharacter;
 class UCurveFloat;
+class UGameplayEffect;
 
 /**
  * Production-ready Gameplay Ability for bounce movement mechanics
@@ -34,13 +38,26 @@ public:
 
 	// Public API - Blueprint accessible for design iteration
 	UFUNCTION(BlueprintPure, Category = "Bounce")
-	int32 GetCurrentAirBounces() const { return CurrentAirBounces; }
+	int32 GetCurrentAirBounces() const { return GetCurrentAirBounceCount(); }
 
 	UFUNCTION(BlueprintPure, Category = "Bounce")
 	int32 GetMaxAirBounces() const { return MaxAirBounces; }
 
 	UFUNCTION(BlueprintCallable, Category = "Bounce")
-	void ResetAirBounces() { CurrentAirBounces = 0; }
+	void ResetAirBounces() { ResetAirBounceCount(); }
+
+	// INDUSTRY BEST PRACTICE: Gameplay Attribute Management - Following Epic Games GAS patterns
+	UFUNCTION(BlueprintPure, Category = "Bounce|Attributes", 
+		meta = (DisplayName = "Get Air Bounce Count", CompactNodeTitle = "Air Bounces"))
+	int32 GetCurrentAirBounceCount() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Attributes",
+		meta = (DisplayName = "Reset Air Bounces", CallInEditor = "true"))
+	void ResetAirBounceCount();
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Attributes",
+		meta = (DisplayName = "Add Air Bounce", CallInEditor = "true"))
+	void IncrementAirBounceCount();
 
 	// RUNTIME TESTING API - Epic Games debugging standards
 	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor,
@@ -77,6 +94,16 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Bounce|Presets", CallInEditor)
 	void ResetToDefaultPreset();
+
+	// DASH-BOUNCE COMBO TESTING UTILITIES - Epic Games debugging standards
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
+	void TestDashBounceCombo();
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
+	void TestJumpBounceCombo();
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
+	void ValidateMomentumTransfer();
 
 protected:
 	// BOUNCE VELOCITY CONTROL - Epic Games naming convention
@@ -141,13 +168,44 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Physics")
 	bool bPreserveDownwardMomentum = false;
 
-	// BOUNCE CURVE CONTROL - Advanced easing options
+	// MOMENTUM TRANSFER SYSTEM - Dash-Bounce Combo Support
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
+		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "1.0", UIMax = "2.5"))
+	float DashMomentumMultiplier = 1.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
+		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "1.0", UIMax = "2.0"))
+	float JumpMomentumMultiplier = 1.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
+		meta = (ClampMin = "0.0", ClampMax = "2.0", UIMin = "0.8", UIMax = "1.5"))
+	float FallMomentumMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
+		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	float MomentumTransferEfficiency = 0.85f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum")
+	bool bAllowMomentumTransfer = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum")
+	bool bPreserveMomentumDirection = true;
+
+	// COMBO SYSTEM - Event-based ability coordination
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Combo")
+	bool bAllowComboBounce = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Combo", 
+		meta = (ClampMin = "0.05", ClampMax = "0.5", UIMin = "0.1", UIMax = "0.3"))
+	float ComboWindow = 0.2f;
+
+	// BOUNCE CURVE CONTROL - Epic Games soft reference pattern for proper asset loading
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Curves", 
-		meta = (DisplayName = "Velocity Curve (Optional)"))
+		meta = (DisplayName = "Velocity Curve (Optional)", AllowedClasses = "/Script/Engine.CurveFloat"))
 	TSoftObjectPtr<UCurveFloat> BounceVelocityCurve;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Curves", 
-		meta = (DisplayName = "Air Control Curve (Optional)"))
+		meta = (DisplayName = "Air Control Curve (Optional)", AllowedClasses = "/Script/Engine.CurveFloat"))
 	TSoftObjectPtr<UCurveFloat> AirControlCurve;
 
 	// BOUNCE EFFECTS CONTROL - VFX/SFX integration points
@@ -177,17 +235,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Debug")
 	bool bLogBounceEvents = false;
 
+	// GAMEPLAY EFFECTS - Following Epic Games GAS patterns
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TSubclassOf<UGameplayEffect> BounceEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TSubclassOf<UGameplayEffect> AirBounceIncrementEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TSubclassOf<UGameplayEffect> AirBounceResetEffect;
+
 	// GAMEPLAY TAGS - Following GAS conventions with proper categories
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|GameplayTags")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bounce|GameplayTags")
 	FGameplayTag BouncingStateTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|GameplayTags")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bounce|GameplayTags")
 	FGameplayTag BounceCooldownTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|GameplayTags")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bounce|GameplayTags")
 	FGameplayTag AirborneStateTag;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|GameplayTags")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bounce|GameplayTags")
 	FGameplayTag BounceImmuneTag;
 
 private:
@@ -207,27 +275,62 @@ private:
 	bool IsCharacterRising(const AMyCharacter* InCharacter) const;
 	FVector CalculateBounceVelocity(const AMyCharacter* InCharacter) const;
 	float GetEffectiveBounceVelocity() const;
+	
+	// Enhanced bounce calculation with momentum transfer
+	FVector CalculateEnhancedBounceVelocity(const AMyCharacter* InCharacter) const;
+	
+	// Momentum transfer utilities - performance optimized
+	bool TryGetMomentumContext(const AMyCharacter* InCharacter, FVelocitySnapshot& OutSnapshot) const;
+	float GetMomentumMultiplier(EVelocitySource Source) const;
+	FVector ApplyMomentumTransfer(const FVector& BaseBounceVelocity, const FVelocitySnapshot& MomentumSnapshot) const;
+	
+	// EPIC GAMES STANDARD: Proper delegate lifecycle management
+	void CleanupDelegates();
 
-	// State Management - RAII principles
+	// EPIC GAMES STANDARD: Async curve loading following proper asset management patterns
+	void LoadCurveAssets();
+	void OnCurveAssetsLoaded();
+
+	// State Management - RAII principles with proper Epic Games standards
+	// CRITICAL: Use TWeakObjectPtr for actor references to prevent dangling pointers
 	UPROPERTY(Transient)
-	TObjectPtr<AMyCharacter> CachedCharacter;
+	TWeakObjectPtr<AMyCharacter> CachedCharacter;
 
 	// Runtime State - Air bounce tracking
 	UPROPERTY(Transient)
-	int32 CurrentAirBounces;
+	int32 CurrentAirBounces = 0;
 
 	UPROPERTY(Transient)
-	bool bIsGrounded;
+	bool bIsGrounded = true;
 
 	UPROPERTY(Transient)
-	float LastGroundContactTime;
+	float LastGroundContactTime = 0.0f;
 
 	UPROPERTY(Transient)
-	float BounceInputPressTime;
+	float BounceInputPressTime = 0.0f;
+
+	// EPIC GAMES STANDARD: Proper delegate lifecycle management per-instance
+	UPROPERTY(Transient)
+	bool bLandedDelegateRegistered = false;
+
+	// Performance optimization: Cache air bounce count during ability execution
+	UPROPERTY(Transient)
+	int32 CachedAirBounceCount = 0;
+
+	// EPIC GAMES STANDARD: Curve asset loading state management
+	UPROPERTY(Transient)
+	TObjectPtr<UCurveFloat> LoadedBounceVelocityCurve;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UCurveFloat> LoadedAirControlCurve;
 
 	// Timers and handles
 	FTimerHandle BounceEffectTimer;
 	FTimerHandle GroundCheckTimer;
+	FTimerHandle CurveLoadTimer;
+
+	// EPIC GAMES STANDARD: Asset loading streamable handle management
+	TSharedPtr<FStreamableHandle> CurveLoadHandle;
 
 	// Constants - Epic Games style
 	static constexpr float DEFAULT_GROUND_CHECK_RATE = 1.0f / 20.0f;

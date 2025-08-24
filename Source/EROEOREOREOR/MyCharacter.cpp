@@ -32,13 +32,13 @@ AMyCharacter::AMyCharacter()
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true; // Enable yaw rotation to follow camera
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement for camera-relative system
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character faces movement direction
-	GetCharacterMovement()->bUseControllerDesiredRotation = false; // Don't rotate to controller
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // How fast character rotates to face movement
+	// Configure character movement for camera-following system
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Don't face movement direction
+	GetCharacterMovement()->bUseControllerDesiredRotation = true; // Rotate to match controller
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f); // Fast rotation to follow camera
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
@@ -62,6 +62,9 @@ AMyCharacter::AMyCharacter()
 	// Initialize GAS components
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+
+	// Initialize dash-bounce combo system component
+	VelocitySnapshotComponent = CreateDefaultSubobject<UVelocitySnapshotComponent>(TEXT("VelocitySnapshotComponent"));
 
 	// Initialize movement input tracking
 	CurrentMovementInput = FVector2D::ZeroVector;
@@ -321,10 +324,11 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 	// Input is a Vector2D
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 	if (Controller != nullptr)
-
+	{
 		// Use the improved input method from your Aura project
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
 }
 
 void AMyCharacter::Jump()
@@ -336,15 +340,6 @@ void AMyCharacter::Jump()
 // Camera-Relative Movement Functions
 void AMyCharacter::MoveForward(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during abilities
-	if (AbilitySystemComponent && 
-		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
-		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveForward blocked - currently using ability"));
-		return; // Don't process movement input during abilities
-	}
-	
 	const float InputValue = Value.Get<float>();
 	
 	// Update movement input tracking (Y = forward/backward)
@@ -363,15 +358,6 @@ void AMyCharacter::MoveForward(const FInputActionValue& Value)
 
 void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during abilities
-	if (AbilitySystemComponent && 
-		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
-		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveBackward blocked - currently using ability"));
-		return; // Don't process movement input during abilities
-	}
-	
 	const float InputValue = Value.Get<float>();
 	
 	// Update movement input tracking (Y = forward/backward, negative for backward)
@@ -391,15 +377,6 @@ void AMyCharacter::MoveBackward(const FInputActionValue& Value)
 
 void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during abilities
-	if (AbilitySystemComponent && 
-		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
-		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveLeft blocked - currently using ability"));
-		return; // Don't process movement input during abilities
-	}
-	
 	const float InputValue = Value.Get<float>();
 	
 	// Update movement input tracking (X = left/right, negative for left)
@@ -419,15 +396,6 @@ void AMyCharacter::MoveLeft(const FInputActionValue& Value)
 
 void AMyCharacter::MoveRight(const FInputActionValue& Value)
 {
-	// CRITICAL FIX: Block movement input during abilities
-	if (AbilitySystemComponent && 
-		(AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing"))) ||
-		 AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Bouncing")))))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveRight blocked - currently using ability"));
-		return; // Don't process movement input during abilities
-	}
-	
 	const float InputValue = Value.Get<float>();
 	
 	// Update movement input tracking (X = left/right, positive for right)
@@ -498,6 +466,23 @@ void AMyCharacter::DashLeft(const FInputActionValue& Value)
 	if (!bActivated)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DashLeft: Failed to activate cached dash ability"));
+	}
+}
+
+void AMyCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+	
+	// Broadcast to listening abilities (like bounce)
+	if (LandedDelegate.IsBound())
+	{
+		LandedDelegate.Broadcast(Hit);
+		UE_LOG(LogTemp, Warning, TEXT("CHARACTER LANDED - Broadcasting to %d delegates"), 
+			LandedDelegate.GetAllObjects().Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CHARACTER LANDED - No delegates listening"));
 	}
 }
 

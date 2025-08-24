@@ -62,6 +62,16 @@ public:
 	UFUNCTION()
 	virtual void OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina);
 
+	// Movement Attributes - Following Epic Games GAS patterns for movement state tracking
+	
+	// Air Bounce Count - Tracks current number of air bounces performed
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", EditAnywhere, ReplicatedUsing = OnRep_AirBounceCount)
+	FGameplayAttributeData AirBounceCount;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, AirBounceCount)
+
+	UFUNCTION()
+	virtual void OnRep_AirBounceCount(const FGameplayAttributeData& OldAirBounceCount);
+
 protected:
 	// Helper function to clamp attribute values
 	void AdjustAttributeForMaxChange(FGameplayAttributeData& AffectedAttribute, const FGameplayAttributeData& MaxAttribute, float NewMaxValue, const FGameplayAttribute& AffectedAttributeProperty);

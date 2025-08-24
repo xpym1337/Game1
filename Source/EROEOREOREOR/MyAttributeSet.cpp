@@ -5,22 +5,28 @@
 
 UMyAttributeSet::UMyAttributeSet()
 {
-	// Initialize default values
+	// Initialize default values - Following Epic Games GAS patterns
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
 	InitStamina(100.0f);
 	InitMaxStamina(100.0f);
+	
+	// Movement state attributes - Initialize to zero
+	InitAirBounceCount(0.0f);
 }
 
 void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// Replicate attributes to all clients
+	// Replicate attributes to all clients - Following Epic Games GAS patterns
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	
+	// Movement state attributes
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AirBounceCount, COND_None, REPNOTIFY_Always);
 }
 
 void UMyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -41,6 +47,11 @@ void UMyAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
 void UMyAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxStamina, OldMaxStamina);
+}
+
+void UMyAttributeSet::OnRep_AirBounceCount(const FGameplayAttributeData& OldAirBounceCount)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AirBounceCount, OldAirBounceCount);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -68,6 +79,11 @@ void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		// Clamp Stamina between 0 and MaxStamina
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxStamina());
+	}
+	else if (Attribute == GetAirBounceCountAttribute())
+	{
+		// Air bounce count must be non-negative integer - clamp and round to nearest integer
+		NewValue = FMath::Max(0.0f, FMath::RoundToFloat(NewValue));
 	}
 }
 

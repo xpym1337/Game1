@@ -24,6 +24,86 @@
 		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
 	},
 	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayAbility_Bounce.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayAbility_Bounce.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayAbility_Dash.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayAbility_Dash.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayEffect_AirBounceIncrement.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayEffect_AirBounceIncrement.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayEffect_AirBounceReset.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayEffect_AirBounceReset.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayTagTester.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\GameplayTagTester.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\EROEOREOREOR.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
 		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\MyAttributeSet.cpp",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
