@@ -255,54 +255,36 @@ void UGameplayAbility_Bounce::ApplyBouncePhysics()
 		return;
 	}
 
-	// PERFORMANCE OPTIMIZATION: Try enhanced bounce first (single code path)
+	const FVector CurrentVelocity = MovementComponent->Velocity;
 	FVector NewVelocity;
-	bool bUsedMomentumTransfer = false;
 
-	if (bAllowComboBounce && bAllowMomentumTransfer)
+	// CLEAN ARCHITECTURE: Single decision point for trajectory enhancement
+	if (bEnableTrajectoryEnhancement)
 	{
-		const FVector EnhancedVelocity = CalculateEnhancedBounceVelocity(Character);
-		if (!EnhancedVelocity.IsZero())
+		NewVelocity = CalculateTrajectoryEnhancedVelocity(CurrentVelocity);
+		
+		if (bLogBounceEvents)
 		{
-			NewVelocity = EnhancedVelocity;
-			bUsedMomentumTransfer = true;
-			UE_LOG(LogTemp, Warning, TEXT("ApplyBouncePhysics: USING MOMENTUM TRANSFER - Enhanced velocity applied!"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("ApplyBouncePhysics: Enhanced velocity calculation returned zero"));
+			UE_LOG(LogTemp, Log, TEXT("ApplyBouncePhysics: Trajectory Enhancement - %.1f -> %.1f"), 
+				CurrentVelocity.Size(), NewVelocity.Size());
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ApplyBouncePhysics: Combo bounce disabled - AllowCombo=%s, AllowMomentum=%s"),
-			bAllowComboBounce ? TEXT("true") : TEXT("false"),
-			bAllowMomentumTransfer ? TEXT("true") : TEXT("false"));
-	}
-
-	// Fallback to standard bounce calculation
-	if (!bUsedMomentumTransfer)
-	{
-		const FVector BounceVelocity = CalculateBounceVelocity(Character);
-		FVector CurrentVelocity = MovementComponent->Velocity;
+		// Fallback to existing momentum transfer system
+		NewVelocity = CalculateStandardBounceVelocity(CurrentVelocity);
 		
-		NewVelocity.X = CurrentVelocity.X * HorizontalVelocityRetention * HorizontalVelocityMultiplier;
-		NewVelocity.Y = CurrentVelocity.Y * HorizontalVelocityRetention * HorizontalVelocityMultiplier;
-		
-		if (bPreserveDownwardMomentum && CurrentVelocity.Z < 0.0f)
+		if (bLogBounceEvents)
 		{
-			NewVelocity.Z = FMath::Max(BounceVelocity.Z, CurrentVelocity.Z + BounceVelocity.Z);
-		}
-		else
-		{
-			NewVelocity.Z = BounceVelocity.Z;
+			UE_LOG(LogTemp, Log, TEXT("ApplyBouncePhysics: Standard Bounce - %.1f -> %.1f"), 
+				CurrentVelocity.Size(), NewVelocity.Size());
 		}
 	}
 
 	// Apply calculated velocity
 	MovementComponent->Velocity = NewVelocity;
 
-	// Rest of existing physics modification code remains unchanged...
+	// Apply physics modifications
 	if (bIgnoreGravityDuringBounce && BounceDuration > 0.0f)
 	{
 		MovementComponent->GravityScale *= GravityScaleDuringBounce;
@@ -978,6 +960,289 @@ FVector UGameplayAbility_Bounce::ApplyMomentumTransfer(const FVector& BaseBounce
 	}
 
 	return EnhancedVelocity;
+}
+
+// TRAJECTORY ENHANCEMENT SYSTEM IMPLEMENTATION - Clean modular architecture
+
+FVector UGameplayAbility_Bounce::CalculateTrajectoryEnhancedVelocity(const FVector& CurrentVelocity) const
+{
+	const EBounceTrajectoryType TrajectoryType = DetermineTrajectoryType(CurrentVelocity);
+	
+	switch (TrajectoryType)
+	{
+		case EBounceTrajectoryType::UpwardBoost:
+			return CalculateUpwardAmplification(CurrentVelocity);
+			
+		case EBounceTrajectoryType::HorizontalBoost:
+			return CalculateHorizontalEnhancement(CurrentVelocity);
+			
+		case EBounceTrajectoryType::DiagonalBoost:
+			return CalculateDiagonalEnhancement(CurrentVelocity);
+			
+		case EBounceTrajectoryType::RecoveryJump:
+			return CalculateRecoveryJump(CurrentVelocity);
+			
+		default:
+			return CalculateStandardBounceVelocity(CurrentVelocity);
+	}
+}
+
+FVector UGameplayAbility_Bounce::CalculateStandardBounceVelocity(const FVector& CurrentVelocity) const
+{
+	// Use existing momentum transfer system when trajectory enhancement is disabled
+	if (bAllowComboBounce && bAllowMomentumTransfer)
+	{
+		const FVector EnhancedVelocity = CalculateEnhancedBounceVelocity(CachedCharacter.Get());
+		if (!EnhancedVelocity.IsZero())
+		{
+			return EnhancedVelocity;
+		}
+	}
+	
+	// Basic bounce calculation
+	FVector BounceVelocity = CurrentVelocity;
+	BounceVelocity.X *= HorizontalVelocityRetention * HorizontalVelocityMultiplier;
+	BounceVelocity.Y *= HorizontalVelocityRetention * HorizontalVelocityMultiplier;
+	
+	// Calculate effective upward velocity
+	const float EffectiveUpwardVelocity = GetEffectiveBounceVelocity();
+	
+	if (bPreserveDownwardMomentum && CurrentVelocity.Z < 0.0f)
+	{
+		BounceVelocity.Z = FMath::Max(EffectiveUpwardVelocity, CurrentVelocity.Z + EffectiveUpwardVelocity);
+	}
+	else
+	{
+		BounceVelocity.Z = EffectiveUpwardVelocity;
+	}
+	
+	return BounceVelocity;
+}
+
+EBounceTrajectoryType UGameplayAbility_Bounce::DetermineTrajectoryType(const FVector& Velocity) const
+{
+	const float HorizontalSpeed = FVector2D(Velocity.X, Velocity.Y).Size();
+	const float VerticalSpeed = FMath::Abs(Velocity.Z);
+	
+	// FALLING: Significant downward movement
+	if (Velocity.Z < -FallingVelocityThreshold)
+	{
+		return EBounceTrajectoryType::RecoveryJump;
+	}
+	
+	// UPWARD: Significant upward movement
+	if (Velocity.Z > UpwardVelocityThreshold)
+	{
+		return EBounceTrajectoryType::UpwardBoost;
+	}
+	
+	// DIAGONAL: Both horizontal and vertical movement
+	if (HorizontalSpeed > MIN_VELOCITY_THRESHOLD && VerticalSpeed > MIN_VELOCITY_THRESHOLD)
+	{
+		return EBounceTrajectoryType::DiagonalBoost;
+	}
+	
+	// HORIZONTAL: Primarily horizontal movement
+	if (HorizontalSpeed > MIN_VELOCITY_THRESHOLD)
+	{
+		return EBounceTrajectoryType::HorizontalBoost;
+	}
+	
+	return EBounceTrajectoryType::None;
+}
+
+FVector UGameplayAbility_Bounce::CalculateUpwardAmplification(const FVector& CurrentVelocity) const
+{
+	FVector EnhancedVelocity = CurrentVelocity;
+	
+	// Amplify all directions when moving upward
+	EnhancedVelocity *= UpwardAmplificationMultiplier;
+	
+	// Cap vertical velocity to prevent excessive height
+	const float MaxUpwardSpeed = BounceUpwardVelocity * 2.0f;
+	EnhancedVelocity.Z = FMath::Min(EnhancedVelocity.Z, MaxUpwardSpeed);
+	
+	// Apply air bounce reduction if applicable
+	if (GetCurrentAirBounceCount() > 0)
+	{
+		const float AirBounceScalar = FMath::Pow(AirBounceVelocityReduction, GetCurrentAirBounceCount());
+		EnhancedVelocity *= AirBounceScalar;
+	}
+	
+	if (bLogBounceEvents)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trajectory: Upward Amplification - %.1f -> %.1f"), 
+			   CurrentVelocity.Size(), EnhancedVelocity.Size());
+	}
+	
+	return EnhancedVelocity;
+}
+
+FVector UGameplayAbility_Bounce::CalculateHorizontalEnhancement(const FVector& CurrentVelocity) const
+{
+	FVector EnhancedVelocity = CurrentVelocity;
+	
+	// Enhance horizontal movement, add moderate vertical boost
+	EnhancedVelocity.X *= HorizontalEnhancementMultiplier;
+	EnhancedVelocity.Y *= HorizontalEnhancementMultiplier;
+	EnhancedVelocity.Z = EnhancedHorizontalBoost;
+	
+	// Apply air bounce reduction if applicable
+	if (GetCurrentAirBounceCount() > 0)
+	{
+		const float AirBounceScalar = FMath::Pow(AirBounceVelocityReduction, GetCurrentAirBounceCount());
+		EnhancedVelocity.X *= AirBounceScalar;
+		EnhancedVelocity.Y *= AirBounceScalar;
+		EnhancedVelocity.Z *= AirBounceScalar;
+	}
+	
+	if (bLogBounceEvents)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trajectory: Horizontal Enhancement - Speed %.1f -> %.1f"), 
+			   FVector2D(CurrentVelocity.X, CurrentVelocity.Y).Size(),
+			   FVector2D(EnhancedVelocity.X, EnhancedVelocity.Y).Size());
+	}
+	
+	return EnhancedVelocity;
+}
+
+FVector UGameplayAbility_Bounce::CalculateDiagonalEnhancement(const FVector& CurrentVelocity) const
+{
+	FVector EnhancedVelocity = CurrentVelocity;
+	
+	// Enhance all movement directions proportionally
+	EnhancedVelocity *= DiagonalEnhancementMultiplier;
+	
+	// Apply air bounce reduction if applicable
+	if (GetCurrentAirBounceCount() > 0)
+	{
+		const float AirBounceScalar = FMath::Pow(AirBounceVelocityReduction, GetCurrentAirBounceCount());
+		EnhancedVelocity *= AirBounceScalar;
+	}
+	
+	if (bLogBounceEvents)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trajectory: Diagonal Enhancement - %.1f -> %.1f"), 
+			   CurrentVelocity.Size(), EnhancedVelocity.Size());
+	}
+	
+	return EnhancedVelocity;
+}
+
+FVector UGameplayAbility_Bounce::CalculateRecoveryJump(const FVector& CurrentVelocity) const
+{
+	FVector RecoveryVelocity = CurrentVelocity;
+	
+	// Preserve horizontal movement, replace vertical with recovery jump
+	RecoveryVelocity.Z = RecoveryJumpVelocity;
+	
+	// Slightly enhance horizontal movement for better feel
+	RecoveryVelocity.X *= 1.1f;
+	RecoveryVelocity.Y *= 1.1f;
+	
+	// Apply air bounce reduction if applicable
+	if (GetCurrentAirBounceCount() > 0)
+	{
+		const float AirBounceScalar = FMath::Pow(AirBounceVelocityReduction, GetCurrentAirBounceCount());
+		RecoveryVelocity.Z *= AirBounceScalar;
+	}
+	
+	if (bLogBounceEvents)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trajectory: Recovery Jump - Falling %.1f -> Recovery %.1f"), 
+			   CurrentVelocity.Z, RecoveryVelocity.Z);
+	}
+	
+	return RecoveryVelocity;
+}
+
+// TRAJECTORY ENHANCEMENT TESTING FUNCTIONS
+
+EBounceTrajectoryType UGameplayAbility_Bounce::GetCurrentTrajectoryType() const
+{
+	const AMyCharacter* Character = CachedCharacter.Get();
+	if (!IsValid(Character))
+	{
+		return EBounceTrajectoryType::None;
+	}
+	
+	const UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
+	if (!IsValid(MovementComponent))
+	{
+		return EBounceTrajectoryType::None;
+	}
+	
+	return DetermineTrajectoryType(MovementComponent->Velocity);
+}
+
+void UGameplayAbility_Bounce::TestTrajectoryEnhancement()
+{
+	UE_LOG(LogTemp, Warning, TEXT("=== TRAJECTORY ENHANCEMENT TEST ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Enhancement Enabled: %s"), bEnableTrajectoryEnhancement ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Warning, TEXT("Current Trajectory Type: %s"), *UEnum::GetValueAsString(GetCurrentTrajectoryType()));
+	
+	const AMyCharacter* Character = CachedCharacter.Get();
+	if (IsValid(Character))
+	{
+		const UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement();
+		if (IsValid(MovementComponent))
+		{
+			const FVector Velocity = MovementComponent->Velocity;
+			UE_LOG(LogTemp, Warning, TEXT("Current Velocity: %.1f, %.1f, %.1f"), Velocity.X, Velocity.Y, Velocity.Z);
+			UE_LOG(LogTemp, Warning, TEXT("Horizontal Speed: %.1f"), FVector2D(Velocity.X, Velocity.Y).Size());
+			UE_LOG(LogTemp, Warning, TEXT("Vertical Speed: %.1f"), Velocity.Z);
+			
+			if (bEnableTrajectoryEnhancement)
+			{
+				const FVector EnhancedVelocity = CalculateTrajectoryEnhancedVelocity(Velocity);
+				UE_LOG(LogTemp, Warning, TEXT("Enhanced Velocity: %.1f, %.1f, %.1f"), 
+					   EnhancedVelocity.X, EnhancedVelocity.Y, EnhancedVelocity.Z);
+				UE_LOG(LogTemp, Warning, TEXT("Speed Change: %.1f -> %.1f"), 
+					   Velocity.Size(), EnhancedVelocity.Size());
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No valid character - cannot test current velocity"));
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("==================================="));
+}
+
+void UGameplayAbility_Bounce::ValidateTrajectoryParameters()
+{
+	UE_LOG(LogTemp, Warning, TEXT("=== TRAJECTORY PARAMETERS ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Enhancement Enabled: %s"), bEnableTrajectoryEnhancement ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Warning, TEXT("Upward Amplification: %.2fx"), UpwardAmplificationMultiplier);
+	UE_LOG(LogTemp, Warning, TEXT("Horizontal Enhancement: %.2fx"), HorizontalEnhancementMultiplier);
+	UE_LOG(LogTemp, Warning, TEXT("Diagonal Enhancement: %.2fx"), DiagonalEnhancementMultiplier);
+	UE_LOG(LogTemp, Warning, TEXT("Recovery Jump Velocity: %.1f"), RecoveryJumpVelocity);
+	UE_LOG(LogTemp, Warning, TEXT("Upward Threshold: %.1f"), UpwardVelocityThreshold);
+	UE_LOG(LogTemp, Warning, TEXT("Falling Threshold: %.1f"), FallingVelocityThreshold);
+	UE_LOG(LogTemp, Warning, TEXT("Enhanced Horizontal Boost: %.1f"), EnhancedHorizontalBoost);
+	UE_LOG(LogTemp, Warning, TEXT("Min Velocity Threshold: %.1f"), MIN_VELOCITY_THRESHOLD);
+	
+	// Validate parameter ranges
+	bool bParametersValid = true;
+	if (UpwardAmplificationMultiplier < 1.0f || UpwardAmplificationMultiplier > 3.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("INVALID: UpwardAmplificationMultiplier out of range (1.0-3.0)"));
+		bParametersValid = false;
+	}
+	if (HorizontalEnhancementMultiplier < 1.0f || HorizontalEnhancementMultiplier > 2.5f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("INVALID: HorizontalEnhancementMultiplier out of range (1.0-2.5)"));
+		bParametersValid = false;
+	}
+	if (RecoveryJumpVelocity < 500.0f || RecoveryJumpVelocity > 1200.0f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("INVALID: RecoveryJumpVelocity out of range (500.0-1200.0)"));
+		bParametersValid = false;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Parameters Valid: %s"), bParametersValid ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Warning, TEXT("============================="));
 }
 
 // EPIC GAMES STANDARD: Async curve loading following proper asset management patterns

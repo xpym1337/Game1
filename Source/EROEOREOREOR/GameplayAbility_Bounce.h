@@ -16,6 +16,17 @@ class AMyCharacter;
 class UCurveFloat;
 class UGameplayEffect;
 
+// EPIC GAMES STANDARD: Enum for trajectory enhancement type safety
+UENUM(BlueprintType)
+enum class EBounceTrajectoryType : uint8
+{
+	None            UMETA(DisplayName = "None"),
+	UpwardBoost     UMETA(DisplayName = "Upward Amplification"),
+	HorizontalBoost UMETA(DisplayName = "Horizontal Enhancement"), 
+	RecoveryJump    UMETA(DisplayName = "Fall Recovery Jump"),
+	DiagonalBoost   UMETA(DisplayName = "Diagonal Enhancement")
+};
+
 /**
  * Production-ready Gameplay Ability for bounce movement mechanics
  * Preserves horizontal momentum while adding upward velocity
@@ -105,6 +116,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
 	void ValidateMomentumTransfer();
 
+	// TRAJECTORY ENHANCEMENT TESTING - Epic Games debugging standards
+	UFUNCTION(BlueprintPure, Category = "Bounce|Testing")
+	EBounceTrajectoryType GetCurrentTrajectoryType() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
+	void TestTrajectoryEnhancement();
+
+	UFUNCTION(BlueprintCallable, Category = "Bounce|Testing", CallInEditor)
+	void ValidateTrajectoryParameters();
+
 protected:
 	// BOUNCE VELOCITY CONTROL - Epic Games naming convention
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Velocity", 
@@ -125,7 +146,7 @@ protected:
 
 	// BOUNCE AIR CONTROL - Movement limitations
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|AirControl", 
-		meta = (ClampMin = "0", ClampMax = "5", UIMin = "0", UIMax = "3"))
+		meta = (ClampMin = "0", ClampMax = "5", UIMin = "0", UIMax = "15"))
 	int32 MaxAirBounces = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|AirControl", 
@@ -198,6 +219,57 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Combo", 
 		meta = (ClampMin = "0.05", ClampMax = "0.5", UIMin = "0.1", UIMax = "0.3"))
 	float ComboWindow = 0.2f;
+
+	// TRAJECTORY ENHANCEMENT SYSTEM - Epic Games standard implementation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement",
+		meta = (DisplayName = "Enable Trajectory Enhancement"))
+	bool bEnableTrajectoryEnhancement = true;
+
+	// Upward Movement Enhancement
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Upward",
+		meta = (ClampMin = "1.0", ClampMax = "3.0", UIMin = "1.2", UIMax = "2.5",
+				DisplayName = "Upward Amplification Multiplier",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float UpwardAmplificationMultiplier = 1.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Upward",
+		meta = (ClampMin = "50.0", ClampMax = "500.0", UIMin = "100.0", UIMax = "300.0",
+				DisplayName = "Minimum Upward Velocity Threshold",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float UpwardVelocityThreshold = 150.0f;
+
+	// Horizontal Movement Enhancement  
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Horizontal",
+		meta = (ClampMin = "1.0", ClampMax = "2.5", UIMin = "1.1", UIMax = "2.0",
+				DisplayName = "Horizontal Enhancement Multiplier",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float HorizontalEnhancementMultiplier = 1.4f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Horizontal",
+		meta = (ClampMin = "300.0", ClampMax = "800.0", UIMin = "400.0", UIMax = "700.0",
+				DisplayName = "Enhanced Horizontal Boost",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float EnhancedHorizontalBoost = 500.0f;
+
+	// Fall Recovery System
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Recovery",
+		meta = (ClampMin = "500.0", ClampMax = "1200.0", UIMin = "600.0", UIMax = "1000.0",
+				DisplayName = "Recovery Jump Velocity",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float RecoveryJumpVelocity = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Recovery",
+		meta = (ClampMin = "50.0", ClampMax = "500.0", UIMin = "100.0", UIMax = "300.0",
+				DisplayName = "Falling Velocity Threshold",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float FallingVelocityThreshold = 200.0f;
+
+	// Diagonal Movement
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Trajectory Enhancement|Diagonal",
+		meta = (ClampMin = "1.0", ClampMax = "2.5", UIMin = "1.2", UIMax = "2.0",
+				DisplayName = "Diagonal Enhancement Multiplier",
+				EditCondition = "bEnableTrajectoryEnhancement"))
+	float DiagonalEnhancementMultiplier = 1.6f;
 
 	// BOUNCE CURVE CONTROL - Epic Games soft reference pattern for proper asset loading
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Curves", 
@@ -283,6 +355,17 @@ private:
 	bool TryGetMomentumContext(const AMyCharacter* InCharacter, FVelocitySnapshot& OutSnapshot) const;
 	float GetMomentumMultiplier(EVelocitySource Source) const;
 	FVector ApplyMomentumTransfer(const FVector& BaseBounceVelocity, const FVelocitySnapshot& MomentumSnapshot) const;
+	
+	// TRAJECTORY ENHANCEMENT SYSTEM - Clean modular implementation
+	FVector CalculateTrajectoryEnhancedVelocity(const FVector& CurrentVelocity) const;
+	FVector CalculateStandardBounceVelocity(const FVector& CurrentVelocity) const;
+	EBounceTrajectoryType DetermineTrajectoryType(const FVector& Velocity) const;
+	
+	// Individual trajectory calculations - Single responsibility, highly testable
+	FVector CalculateUpwardAmplification(const FVector& CurrentVelocity) const;
+	FVector CalculateHorizontalEnhancement(const FVector& CurrentVelocity) const;
+	FVector CalculateDiagonalEnhancement(const FVector& CurrentVelocity) const;
+	FVector CalculateRecoveryJump(const FVector& CurrentVelocity) const;
 	
 	// EPIC GAMES STANDARD: Proper delegate lifecycle management
 	void CleanupDelegates();
