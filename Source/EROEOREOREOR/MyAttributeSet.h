@@ -72,6 +72,65 @@ public:
 	UFUNCTION()
 	virtual void OnRep_AirBounceCount(const FGameplayAttributeData& OldAirBounceCount);
 
+	// Combat Attributes for Damage System
+	
+	// Attack Power - Base damage multiplier
+	UPROPERTY(BlueprintReadOnly, Category = "Combat", EditAnywhere, ReplicatedUsing = OnRep_AttackPower)
+	FGameplayAttributeData AttackPower;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, AttackPower)
+
+	UFUNCTION()
+	virtual void OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower);
+
+	// Critical Hit Chance (0.0 to 1.0)
+	UPROPERTY(BlueprintReadOnly, Category = "Combat", EditAnywhere, ReplicatedUsing = OnRep_CriticalHitChance)
+	FGameplayAttributeData CriticalHitChance;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, CriticalHitChance)
+
+	UFUNCTION()
+	virtual void OnRep_CriticalHitChance(const FGameplayAttributeData& OldCriticalHitChance);
+
+	// Critical Hit Multiplier 
+	UPROPERTY(BlueprintReadOnly, Category = "Combat", EditAnywhere, ReplicatedUsing = OnRep_CriticalHitMultiplier)
+	FGameplayAttributeData CriticalHitMultiplier;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, CriticalHitMultiplier)
+
+	UFUNCTION()
+	virtual void OnRep_CriticalHitMultiplier(const FGameplayAttributeData& OldCriticalHitMultiplier);
+
+	// Attack Speed (attacks per second multiplier)
+	UPROPERTY(BlueprintReadOnly, Category = "Combat", EditAnywhere, ReplicatedUsing = OnRep_AttackSpeed)
+	FGameplayAttributeData AttackSpeed;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, AttackSpeed)
+
+	UFUNCTION()
+	virtual void OnRep_AttackSpeed(const FGameplayAttributeData& OldAttackSpeed);
+
+	// Physical Resistance (0.0 to 1.0, reduces physical damage)
+	UPROPERTY(BlueprintReadOnly, Category = "Resistances", EditAnywhere, ReplicatedUsing = OnRep_PhysicalResistance)
+	FGameplayAttributeData PhysicalResistance;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, PhysicalResistance)
+
+	UFUNCTION()
+	virtual void OnRep_PhysicalResistance(const FGameplayAttributeData& OldPhysicalResistance);
+
+	// Elemental Resistance (0.0 to 1.0, reduces elemental damage)
+	UPROPERTY(BlueprintReadOnly, Category = "Resistances", EditAnywhere, ReplicatedUsing = OnRep_ElementalResistance)
+	FGameplayAttributeData ElementalResistance;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, ElementalResistance)
+
+	UFUNCTION()
+	virtual void OnRep_ElementalResistance(const FGameplayAttributeData& OldElementalResistance);
+
+	// Meta Attributes - Used for damage calculations, not stored permanently
+	UPROPERTY(BlueprintReadOnly, Category = "Meta Attributes")
+	FGameplayAttributeData IncomingDamage;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, IncomingDamage)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Meta Attributes")
+	FGameplayAttributeData IncomingHealing;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, IncomingHealing)
+
 protected:
 	// Helper function to clamp attribute values
 	void AdjustAttributeForMaxChange(FGameplayAttributeData& AffectedAttribute, const FGameplayAttributeData& MaxAttribute, float NewMaxValue, const FGameplayAttribute& AffectedAttributeProperty);

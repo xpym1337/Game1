@@ -6,6 +6,8 @@
 #include "MyAttributeSet.h"
 #include "GameplayAbility_Dash.h"
 #include "GameplayAbility_Bounce.h"
+#include "CombatStateMachineComponent.h"
+#include "CombatPrototypeComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -62,6 +64,11 @@ AMyCharacter::AMyCharacter()
 	// Initialize GAS components
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+
+	// Initialize combat system components
+	CombatStateMachine = CreateDefaultSubobject<UCombatStateMachineComponent>(TEXT("CombatStateMachine"));
+	DamageApplicationComponent = CreateDefaultSubobject<UDamageApplicationComponent>(TEXT("DamageApplicationComponent"));
+	AttackShapeComponent = CreateDefaultSubobject<UAttackShapeComponent>(TEXT("AttackShapeComponent"));
 
 	// Initialize dash-bounce combo system component
 	VelocitySnapshotComponent = CreateDefaultSubobject<UVelocitySnapshotComponent>(TEXT("VelocitySnapshotComponent"));
@@ -510,6 +517,57 @@ void AMyCharacter::TestDash()
 void AMyCharacter::TestBounce()
 {
 	UE_LOG(LogTemp, Log, TEXT("TestBounce debug function called"));
+}
+
+void AMyCharacter::LightAttack(const FInputActionValue& Value)
+{
+	if (!CombatStateMachine)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LightAttack: CombatStateMachine is null"));
+		return;
+	}
+	
+	// Buffer light attack input
+	const FGameplayTag LightAttackTag = FGameplayTag::RequestGameplayTag(FName("Combat.Actions.Attack.Light.Jab"));
+	CombatStateMachine->BufferInput(LightAttackTag);
+	
+	UE_LOG(LogTemp, Log, TEXT("Light Attack input buffered"));
+}
+
+void AMyCharacter::HeavyAttack(const FInputActionValue& Value)
+{
+	if (!CombatStateMachine)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HeavyAttack: CombatStateMachine is null"));
+		return;
+	}
+	
+	// Buffer heavy attack input
+	const FGameplayTag HeavyAttackTag = FGameplayTag::RequestGameplayTag(FName("Combat.Actions.Attack.Heavy.Straight"));
+	CombatStateMachine->BufferInput(HeavyAttackTag);
+	
+	UE_LOG(LogTemp, Log, TEXT("Heavy Attack input buffered"));
+}
+
+void AMyCharacter::TestCombatSystem()
+{
+	if (!CombatStateMachine)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TestCombatSystem: CombatStateMachine is null"));
+		return;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("=== COMBAT SYSTEM TEST START ==="));
+	UE_LOG(LogTemp, Log, TEXT("Current State: %d"), static_cast<int32>(CombatStateMachine->GetCurrentState()));
+	UE_LOG(LogTemp, Log, TEXT("Input Buffer Size: %d"), CombatStateMachine->GetInputBufferSize());
+	UE_LOG(LogTemp, Log, TEXT("Loaded Actions: %d"), CombatStateMachine->GetLoadedActionCount());
+	
+	// Test light attack
+	const FGameplayTag TestTag = FGameplayTag::RequestGameplayTag(FName("Combat.Actions.Attack.Light.Jab"));
+	const bool bCanStart = CombatStateMachine->CanStartAction(TestTag);
+	UE_LOG(LogTemp, Log, TEXT("Can start Light Jab: %s"), bCanStart ? TEXT("YES") : TEXT("NO"));
+	
+	UE_LOG(LogTemp, Log, TEXT("=== COMBAT SYSTEM TEST END ==="));
 }
 
 // Production-ready dash methods - clean GAS implementation

@@ -11,6 +11,14 @@ UMyAttributeSet::UMyAttributeSet()
 	InitStamina(100.0f);
 	InitMaxStamina(100.0f);
 	
+	// Combat attributes - Initialize to reasonable defaults
+	InitAttackPower(1.0f);           // Base damage multiplier
+	InitCriticalHitChance(0.05f);    // 5% base crit chance
+	InitCriticalHitMultiplier(1.5f); // 1.5x damage on crit
+	InitAttackSpeed(1.0f);           // Normal attack speed
+	InitPhysicalResistance(0.0f);    // No base resistance
+	InitElementalResistance(0.0f);   // No base resistance
+	
 	// Movement state attributes - Initialize to zero
 	InitAirBounceCount(0.0f);
 }
@@ -24,6 +32,14 @@ void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+	
+	// Combat attributes
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, CriticalHitChance, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, CriticalHitMultiplier, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, PhysicalResistance, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, ElementalResistance, COND_None, REPNOTIFY_Always);
 	
 	// Movement state attributes
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AirBounceCount, COND_None, REPNOTIFY_Always);
@@ -52,6 +68,37 @@ void UMyAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStami
 void UMyAttributeSet::OnRep_AirBounceCount(const FGameplayAttributeData& OldAirBounceCount)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AirBounceCount, OldAirBounceCount);
+}
+
+// Combat Attributes OnRep Functions
+void UMyAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackPower, OldAttackPower);
+}
+
+void UMyAttributeSet::OnRep_CriticalHitChance(const FGameplayAttributeData& OldCriticalHitChance)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitChance, OldCriticalHitChance);
+}
+
+void UMyAttributeSet::OnRep_CriticalHitMultiplier(const FGameplayAttributeData& OldCriticalHitMultiplier)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitMultiplier, OldCriticalHitMultiplier);
+}
+
+void UMyAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldAttackSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackSpeed, OldAttackSpeed);
+}
+
+void UMyAttributeSet::OnRep_PhysicalResistance(const FGameplayAttributeData& OldPhysicalResistance)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, PhysicalResistance, OldPhysicalResistance);
+}
+
+void UMyAttributeSet::OnRep_ElementalResistance(const FGameplayAttributeData& OldElementalResistance)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, ElementalResistance, OldElementalResistance);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)

@@ -1,0 +1,7 @@
+---,ActionTag,DisplayName,StartupFrames,ActiveFrames,RecoveryFrames,CancelWindowStart,CancelWindowEnd,PriorityLevel,MovementSpeedMultiplier,Range,CanCancelInto,bUseCombatPrototype,CombatPrototypeName,bTriggerAoE,AoEPrototypeName
+LightAttack1,Combat.Actions.Attack.Light.Jab,"Light Jab",8,4,12,6,10,0,0.2,150,"Combat.Actions.Attack.Light.Cross,Combat.Actions.Attack.Heavy.Straight",true,"LightJab",false,""
+LightAttack2,Combat.Actions.Attack.Light.Cross,"Light Cross",10,6,14,8,12,0,0.15,180,"Combat.Actions.Attack.Light.Hook,Combat.Actions.Attack.Heavy.Uppercut",true,"LightCross",false,""
+LightAttack3,Combat.Actions.Attack.Light.Hook,"Light Hook",12,8,16,10,14,0,0.1,200,"Combat.Actions.Attack.Heavy.Straight,Combat.Actions.Movement.Dash",true,"LightHook",false,""
+HeavyAttack1,Combat.Actions.Attack.Heavy.Straight,"Heavy Straight",18,12,24,15,20,1,0.05,250,"Combat.Actions.Attack.Light.Jab",true,"HeavyPunch",true,"HeavyImpact"
+HeavyAttack2,Combat.Actions.Attack.Heavy.Uppercut,"Heavy Uppercut",22,10,28,18,25,1,0.0,220,"Combat.Actions.Movement.Dash",true,"HeavyUppercut",true,"UppercutShockwave"
+DashAttack,Combat.Actions.Movement.DashAttack,"Dash Strike",6,8,18,12,16,2,0.8,300,"Combat.Actions.Attack.Light.Jab",true,"DashStrike",false,""

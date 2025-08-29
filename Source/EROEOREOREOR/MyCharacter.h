@@ -10,6 +10,8 @@
 #include "InputActionValue.h"
 #include "GameplayAbility_Dash.h"
 #include "VelocitySnapshotComponent.h"
+#include "CombatStateMachineComponent.h"
+#include "GameplayEffect_Damage.h"
 #include "MyCharacter.generated.h"
 
 class UInputMappingContext;
@@ -85,12 +87,17 @@ public:
 	// Bounce Action Functions
 	void Bounce(const FInputActionValue& Value);
 	
+	// Combat Action Functions
+	void LightAttack(const FInputActionValue& Value);
+	void HeavyAttack(const FInputActionValue& Value);
+	
 	// Debugging functions
 	void Move(const FInputActionValue& Value);
 	void Dash(const FInputActionValue& Value);
 	void TestKey();
 	void TestDash();
 	void TestBounce();
+	void TestCombatSystem();
 
 	// Camera turn rate properties for smoother input
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -179,6 +186,16 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMyAttributeSet> AttributeSet;
+
+	// Combat System Components
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCombatStateMachineComponent> CombatStateMachine;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDamageApplicationComponent> DamageApplicationComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAttackShapeComponent> AttackShapeComponent;
 
 	// Dash-Bounce Combo System Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
