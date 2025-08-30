@@ -8,6 +8,7 @@
 #include "Engine/TimerHandle.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Misc/Optional.h"
 #include "VelocitySnapshotComponent.h"
 #include "GameplayAbility_Bounce.generated.h"
 
@@ -127,21 +128,25 @@ public:
 	void ValidateTrajectoryParameters();
 
 protected:
-	// BOUNCE VELOCITY CONTROL - Epic Games naming convention
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Velocity", 
-		meta = (ClampMin = "200.0", ClampMax = "2000.0", UIMin = "400.0", UIMax = "1200.0"))
+	// BOUNCE VELOCITY CONTROL - Core bounce power settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🏀 Bounce Core Settings", 
+		meta = (ClampMin = "100.0", ClampMax = "5000.0", UIMin = "200.0", UIMax = "3000.0", Units = "cm/s",
+		DisplayName = "Upward Bounce Power", ToolTip = "Primary upward velocity when bouncing. Higher = bigger jumps!"))
 	float BounceUpwardVelocity = 800.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.8", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🏀 Bounce Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "0.0", UIMax = "2.0", Units = "Multiplier",
+		DisplayName = "Horizontal Keep Rate", ToolTip = "How much side-to-side speed to keep when bouncing. 1.0 = keep all momentum, >1.0 = amplify momentum."))
 	float HorizontalVelocityRetention = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "2.0", UIMin = "0.0", UIMax = "1.5"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🏀 Bounce Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "5.0", UIMin = "0.0", UIMax = "3.0", Units = "Multiplier",
+		DisplayName = "Horizontal Boost", ToolTip = "Extra horizontal speed boost during bounce. 1.0 = normal, 2.0 = double boost, 3.0 = triple boost."))
 	float HorizontalVelocityMultiplier = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🏀 Bounce Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "2.0", UIMin = "0.0", UIMax = "1.5", Units = "Multiplier",
+		DisplayName = "Air Control Power", ToolTip = "How much directional control you have while airborne. 0 = no control, 1 = full control, >1 = enhanced control."))
 	float AirControlMultiplier = 0.2f;
 
 	// BOUNCE AIR CONTROL - Movement limitations
@@ -189,22 +194,37 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Physics")
 	bool bPreserveDownwardMomentum = false;
 
-	// MOMENTUM TRANSFER SYSTEM - Dash-Bounce Combo Support
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
-		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "1.0", UIMax = "2.5"))
+	// COMBO MULTIPLIERS - Dash-Bounce momentum transfer power  
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🔥 Combo Multipliers", 
+		meta = (ClampMin = "0.0", ClampMax = "10.0", UIMin = "1.0", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Dash → Bounce Power", ToolTip = "How much stronger bounce becomes after dash. 1.8 = 80% stronger! Great for air combos."))
 	float DashMomentumMultiplier = 1.8f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
-		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "1.0", UIMax = "2.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🔥 Combo Multipliers", 
+		meta = (ClampMin = "0.0", ClampMax = "10.0", UIMin = "1.0", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Jump → Bounce Power", ToolTip = "Bounce power boost when used during jump. 1.3 = 30% stronger for jump combos."))
 	float JumpMomentumMultiplier = 1.3f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
-		meta = (ClampMin = "0.0", ClampMax = "2.0", UIMin = "0.8", UIMax = "1.5"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🔥 Combo Multipliers", 
+		meta = (ClampMin = "0.0", ClampMax = "10.0", UIMin = "0.8", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Fall → Bounce Power", ToolTip = "Recovery bounce power when falling. Higher = better fall recovery potential."))
 	float FallMomentumMultiplier = 1.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum", 
-		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🔥 Combo Multipliers", 
+		meta = (ClampMin = "0.0", ClampMax = "3.0", UIMin = "0.0", UIMax = "1.0", Units = "Multiplier",
+		DisplayName = "Momentum Transfer Rate", ToolTip = "How efficiently momentum transfers between abilities. 0.85 = 85% transfer rate."))
 	float MomentumTransferEfficiency = 0.85f;
+
+	// AXIS CONTROL - Fine-tune bounce direction
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "⚖️ Axis Control", 
+		meta = (ClampMin = "0.1", ClampMax = "10.0", UIMin = "0.5", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "X-Axis Multiplier", ToolTip = "Control horizontal bounce strength. 1.0 = normal, 2.0 = double power."))
+	float BounceXAxisMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "⚖️ Axis Control", 
+		meta = (ClampMin = "0.1", ClampMax = "10.0", UIMin = "0.5", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Y-Axis Multiplier", ToolTip = "Control side-to-side bounce strength. 1.0 = normal, 2.0 = double power."))
+	float BounceYAxisMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Momentum")
 	bool bAllowMomentumTransfer = true;

@@ -379,16 +379,28 @@ bool UGameplayAbility_Bounce::ValidateActivationRequirements(const AMyCharacter*
 	const bool bIsDashing = ASC && ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dashing")));
 	const bool bIsJumping = MovementComponent->IsFalling() && MovementComponent->Velocity.Z > 0.0f;
 	
+	// EDGE CASE FIX: Check for recent dash momentum to handle dash-ending transitions
+	const FVector CurrentVelocity = MovementComponent->Velocity;
+	const float HorizontalSpeed = FVector2D(CurrentVelocity.X, CurrentVelocity.Y).Size();
+	FVelocitySnapshot TestSnapshot;
+	const bool bHasRecentDashMomentum = TryGetMomentumContext(InCharacter, TestSnapshot) && 
+		HorizontalSpeed > MIN_VELOCITY_THRESHOLD;
+	
 	// INDUSTRY BEST PRACTICE: Get air bounce count from Gameplay Attributes for reliable state
 	const int32 ActualCurrentAirBounces = GetCurrentAirBounceCount();
 
 	// Check air bounce limitations
 	const bool bIsCurrentlyGrounded = IsCharacterGrounded(InCharacter);
-	UE_LOG(LogTemp, Log, TEXT("Bounce Validation: Grounded=%s, Dashing=%s, Jumping=%s, AirBounces=%d/%d"), 
+	UE_LOG(LogTemp, Log, TEXT("Bounce Validation: Grounded=%s, Dashing=%s, Jumping=%s, RecentDash=%s, HorizSpeed=%.1f, AirBounces=%d/%d"), 
 		bIsCurrentlyGrounded ? TEXT("true") : TEXT("false"),
 		bIsDashing ? TEXT("true") : TEXT("false"),
 		bIsJumping ? TEXT("true") : TEXT("false"),
+		bHasRecentDashMomentum ? TEXT("true") : TEXT("false"),
+		HorizontalSpeed,
 		ActualCurrentAirBounces, MaxAirBounces);
+
+	// USE ABILITY'S CORE SETTINGS DIRECTLY - Single source of truth
+	UE_LOG(LogTemp, Log, TEXT("Bounce Validation: Using ABILITY core setting MaxAirBounces: %d"), MaxAirBounces);
 
 	// DASH-BOUNCE INTEGRATION: Allow bounce during dash regardless of ground state
 	if (bIsDashing)
@@ -402,7 +414,7 @@ bool UGameplayAbility_Bounce::ValidateActivationRequirements(const AMyCharacter*
 				ActualCurrentAirBounces, BouncesAfterThisOne, MaxAirBounces);
 			return false;
 		}
-		UE_LOG(LogTemp, Log, TEXT("Bounce Validation PASS: Dash-bounce combo allowed"));
+		UE_LOG(LogTemp, Log, TEXT("Bounce Validation PASS: Dash-bounce combo allowed (ABILITY core setting limit: %d)"), MaxAirBounces);
 		return true;
 	}
 
@@ -416,7 +428,22 @@ bool UGameplayAbility_Bounce::ValidateActivationRequirements(const AMyCharacter*
 				ActualCurrentAirBounces, BouncesAfterThisOne, MaxAirBounces);
 			return false;
 		}
-		UE_LOG(LogTemp, Log, TEXT("Bounce Validation PASS: Jump-bounce combo allowed"));
+		UE_LOG(LogTemp, Log, TEXT("Bounce Validation PASS: Jump-bounce combo allowed (ABILITY core setting limit: %d)"), MaxAirBounces);
+		return true;
+	}
+
+	// EDGE CASE FIX: Recent dash momentum - extend dash rules briefly after dash ends
+	if (bHasRecentDashMomentum && !bIsCurrentlyGrounded)
+	{
+		// Treat recent dash momentum similar to active dash (slightly more restrictive)
+		const int32 BouncesAfterThisOne = ActualCurrentAirBounces + 1;
+		if (BouncesAfterThisOne > MaxAirBounces)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Bounce Validation FAIL: Recent dash momentum wouldn't allow air bounce (%d would become %d/%d)"), 
+				ActualCurrentAirBounces, BouncesAfterThisOne, MaxAirBounces);
+			return false;
+		}
+		UE_LOG(LogTemp, Log, TEXT("Bounce Validation PASS: Recent dash momentum allows bounce (ABILITY core setting limit: %d)"), MaxAirBounces);
 		return true;
 	}
 
@@ -516,23 +543,45 @@ FVector UGameplayAbility_Bounce::CalculateBounceVelocity(const AMyCharacter* InC
 
 float UGameplayAbility_Bounce::GetEffectiveBounceVelocity() const
 {
+	// USE ABILITY'S CORE SETTINGS DIRECTLY - This ensures editor changes take effect
 	const int32 CurrentCount = GetCurrentAirBounceCount();
+	
 	if (CurrentCount == 0)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Bounce: Using ABILITY core setting velocity: %.1f"), BounceUpwardVelocity);
 		return BounceUpwardVelocity;
 	}
 
-	// Reduce velocity for air bounces
-	return BounceUpwardVelocity * FMath::Pow(AirBounceVelocityReduction, static_cast<float>(CurrentCount));
+	// Reduce velocity for air bounces using ability's settings
+	const float EffectiveVelocity = BounceUpwardVelocity * FMath::Pow(AirBounceVelocityReduction, static_cast<float>(CurrentCount));
+	UE_LOG(LogTemp, Log, TEXT("Bounce: Air bounce %d - ABILITY velocity %.1f -> %.1f"), 
+		CurrentCount, BounceUpwardVelocity, EffectiveVelocity);
+	
+	return EffectiveVelocity;
 }
 
-// INDUSTRY BEST PRACTICE: Gameplay Attribute Management - Following Epic Games GAS patterns
+// CRITICAL FIX: Safe GAS access with proper validation
 int32 UGameplayAbility_Bounce::GetCurrentAirBounceCount() const
 {
-	const UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	// SAFER APPROACH: Use cached character reference instead of ActorInfo
+	const AMyCharacter* Character = CachedCharacter.Get();
+	if (!IsValid(Character))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetCurrentAirBounceCount: Invalid cached character"));
+		return 0;
+	}
+
+	const UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
 	if (!IsValid(ASC))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetCurrentAirBounceCount: Invalid ASC"));
+		UE_LOG(LogTemp, Warning, TEXT("GetCurrentAirBounceCount: Invalid ASC from character"));
+		return 0;
+	}
+
+	// Validate ASC is properly initialized
+	if (!ASC->AbilityActorInfo.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("GetCurrentAirBounceCount: ASC AbilityActorInfo not valid - GAS not initialized"));
 		return 0;
 	}
 
@@ -545,6 +594,7 @@ int32 UGameplayAbility_Bounce::GetCurrentAirBounceCount() const
 	}
 
 	const float AttributeValue = AttributeSet->GetAirBounceCount();
+	UE_LOG(LogTemp, Log, TEXT("GetCurrentAirBounceCount: Retrieved value %.1f from GAS"), AttributeValue);
 	return FMath::RoundToInt32(AttributeValue);
 }
 
@@ -999,10 +1049,10 @@ FVector UGameplayAbility_Bounce::CalculateStandardBounceVelocity(const FVector& 
 		}
 	}
 	
-	// Basic bounce calculation
+	// Basic bounce calculation with NEW axis multipliers
 	FVector BounceVelocity = CurrentVelocity;
-	BounceVelocity.X *= HorizontalVelocityRetention * HorizontalVelocityMultiplier;
-	BounceVelocity.Y *= HorizontalVelocityRetention * HorizontalVelocityMultiplier;
+	BounceVelocity.X *= HorizontalVelocityRetention * HorizontalVelocityMultiplier * BounceXAxisMultiplier;
+	BounceVelocity.Y *= HorizontalVelocityRetention * HorizontalVelocityMultiplier * BounceYAxisMultiplier;
 	
 	// Calculate effective upward velocity
 	const float EffectiveUpwardVelocity = GetEffectiveBounceVelocity();

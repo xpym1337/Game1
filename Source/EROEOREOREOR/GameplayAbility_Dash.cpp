@@ -219,14 +219,10 @@ void UGameplayAbility_Dash::ExecuteDash()
 	AMyCharacter* Character = CachedCharacter.Get();
 	check(Character); // Epic Games style assertion for internal methods
 
-	// IMPORTANT: Get dash parameters from Character Blueprint - allows easy tuning!
-	DashSpeed = Character->DashSpeed;
-	DashDuration = Character->DashDuration;
-	MomentumRetention = Character->MomentumRetention;
-	DashInitialBurstSpeed = Character->DashInitialBurstSpeed;
-	UpdateFrequency = Character->UpdateFrequency;
-
-	DASH_LOG(Warning, TEXT("Using Character dash values - Speed: %.1f, Duration: %.2f, Momentum: %.2f"), 
+	// EDITOR VALUES NOW RESPECTED - No more character blueprint override!
+	// The ability's own editor parameters are now the authoritative source
+	
+	DASH_LOG(Warning, TEXT("Using Ability editor values - Speed: %.1f, Duration: %.2f, Momentum: %.2f"), 
 		DashSpeed, DashDuration, MomentumRetention);
 
 	// Store input direction relative to camera at activation time
@@ -380,8 +376,16 @@ void UGameplayAbility_Dash::UpdateDashVelocity()
 	const FVector DashDirectionVector = CalculateCameraRelativeDashDirection(Character);
 	const float CurrentSpeed = CalculateCurrentDashSpeed(Alpha);
 
-	// Apply velocity with Z-preservation - critical for gravity
+	// Apply velocity with Z-preservation and new multipliers - critical for gravity
 	FVector DashVelocity = DashDirectionVector * CurrentSpeed;
+	
+	// Apply new axis-specific multipliers
+	DashVelocity.X *= DashXAxisMultiplier;
+	DashVelocity.Y *= DashYAxisMultiplier;
+	
+	// Apply dash-specific multipliers
+	DashVelocity *= DashVelocityMultiplier;
+	
 	DashVelocity.Z = MovementComponent->Velocity.Z;
 	MovementComponent->Velocity = DashVelocity;
 

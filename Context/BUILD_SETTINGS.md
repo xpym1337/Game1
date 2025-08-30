@@ -612,6 +612,45 @@ class UCombatStateMachineComponent
 "PlatformCrypto",           // Platform-specific encryption
 ```
 
+## Dependency Validation Framework
+
+### Include → Module Mapping (Validation Rules)
+- GameplayTagContainer.h → "GameplayTags"
+- AbilitySystemComponent.h → "GameplayAbilities" 
+- InputMappingContext.h → "EnhancedInput"
+- UserWidget.h → "UMG", "Slate", "SlateCore"
+- AssetManager.h → "Engine" (already included)
+- StreamableManager.h → "Engine" (already included)
+- TimerHandle.h → "Engine" (already included)
+
+### High-Usage Includes Requiring Validation
+Based on codebase analysis:
+- GameplayTagContainer.h (used in 80% of gameplay classes)
+- Engine/TimerHandle.h (used in 60% of ability classes)  
+- Engine/AssetManager.h (used in 40% of ability classes)
+- Abilities/GameplayAbility.h (all ability base classes)
+
+### Dependency Validation Checklist
+When creating/modifying classes:
+- [ ] All includes follow correct order (CoreMinimal → Parent → Engine → Project → .generated)
+- [ ] New gameplay tags registered in Config/Tags/GameplayTags.ini
+- [ ] Module dependencies added to Build.cs if needed
+- [ ] Forward declarations used where possible
+- [ ] Documentation updated with new patterns
+
+### Critical Dependency Self-Check
+Before completing any code implementation, verify:
+```cpp
+// Dependency Check Comment Template:
+// ✓ CoreMinimal.h first
+// ✓ Parent class include second  
+// ✓ Required modules in Build.cs (GameplayTags, GameplayAbilities, etc.)
+// ✓ Forward declared classes where possible (performance optimization)
+// ✓ .generated.h last
+// ✓ All gameplay tags registered in GameplayTags.ini
+// ✓ Documentation updated
+```
+
 ## Maintenance and Updates
 
 ### 🔄 Build System Maintenance

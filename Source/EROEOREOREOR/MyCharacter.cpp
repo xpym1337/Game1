@@ -84,27 +84,6 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Grant abilities to character
-	if (AbilitySystemComponent && AbilitySystemComponent->GetAvatarActor() == this)
-	{
-		// Grant dash ability
-		FGameplayAbilitySpec DashAbilitySpec(
-			UGameplayAbility_Dash::StaticClass(),
-			1, // Level
-			INDEX_NONE, // InputID
-			this // SourceObject
-		);
-		AbilitySystemComponent->GiveAbility(DashAbilitySpec);
-
-		// Grant bounce ability
-		FGameplayAbilitySpec BounceAbilitySpec(
-			UGameplayAbility_Bounce::StaticClass(),
-			1, // Level
-			INDEX_NONE, // InputID
-			this // SourceObject
-		);
-		AbilitySystemComponent->GiveAbility(BounceAbilitySpec);
-	}
 	
 	// Setup Enhanced Input
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -260,55 +239,15 @@ void AMyCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	
-	// Initialize the Ability System for the Server
+	// Initialize the Ability System for the Server - NO ABILITY GRANTING
 	if (AbilitySystemComponent && AttributeSet)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		
 		// Ensure the AttributeSet is properly registered with the ASC
-		// The AttributeSet should be automatically discovered, but we can force it
 		AbilitySystemComponent->GetSet<UMyAttributeSet>();
 		
-		// CRITICAL: Grant abilities during possession (server-side)
-		UE_LOG(LogTemp, Error, TEXT("POSSESSED BY - GRANTING ABILITIES"));
-		
-		// Grant dash ability
-		FGameplayAbilitySpec DashAbilitySpec(
-			UGameplayAbility_Dash::StaticClass(),
-			1, // Level
-			INDEX_NONE, // InputID
-			this // SourceObject
-		);
-		
-		FGameplayAbilitySpecHandle DashHandle = AbilitySystemComponent->GiveAbility(DashAbilitySpec);
-		
-		if (DashHandle.IsValid())
-		{
-			UE_LOG(LogTemp, Error, TEXT("DASH ABILITY GRANTED IN POSSESSED BY"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("FAILED TO GRANT DASH ABILITY IN POSSESSED BY"));
-		}
-
-		// Grant bounce ability
-		FGameplayAbilitySpec BounceAbilitySpec(
-			UGameplayAbility_Bounce::StaticClass(),
-			1, // Level
-			INDEX_NONE, // InputID
-			this // SourceObject
-		);
-		
-		FGameplayAbilitySpecHandle BounceHandle = AbilitySystemComponent->GiveAbility(BounceAbilitySpec);
-		
-		if (BounceHandle.IsValid())
-		{
-			UE_LOG(LogTemp, Error, TEXT("BOUNCE ABILITY GRANTED IN POSSESSED BY"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("FAILED TO GRANT BOUNCE ABILITY IN POSSESSED BY"));
-		}
+		UE_LOG(LogTemp, Log, TEXT("PossessedBy: GAS initialized, abilities will be granted by Blueprint"));
 	}
 }
 
@@ -697,4 +636,149 @@ void AMyCharacter::Bounce(const FInputActionValue& Value)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Bounce: TryActivateAbility failed despite CanActivateAbility returning true"));
 	}
+}
+
+// BLUEPRINT ACCESSIBLE ATTRIBUTE MANAGEMENT FUNCTIONS
+float AMyCharacter::GetCurrentHealth() const
+{
+	if (const UMyAttributeSet* MyAttributeSet = GetMyAttributeSet())
+	{
+		return MyAttributeSet->GetHealth();
+	}
+	return 0.0f;
+}
+
+float AMyCharacter::GetMaxHealth() const
+{
+	if (const UMyAttributeSet* MyAttributeSet = GetMyAttributeSet())
+	{
+		return MyAttributeSet->GetMaxHealth();
+	}
+	return 0.0f;
+}
+
+int32 AMyCharacter::GetCurrentAirBounces() const
+{
+	if (const UMyAttributeSet* MyAttributeSet = GetMyAttributeSet())
+	{
+		return static_cast<int32>(MyAttributeSet->GetAirBounceCount());
+	}
+	return 0;
+}
+
+int32 AMyCharacter::GetMaxAirBounces() const
+{
+	// MaxAirBounces is handled by Blueprint property, not AttributeSet
+	return StartingMaxAirBounces;
+}
+
+// BLUEPRINT CALLABLE ABILITY GRANTING - Single source of truth
+void AMyCharacter::GrantStartingAbilities()
+{
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GrantStartingAbilities: AbilitySystemComponent is null"));
+		return;
+	}
+
+	if (!AbilitySystemComponent->AbilityActorInfo.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GrantStartingAbilities: AbilityActorInfo not valid - call after GAS initialization"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("GrantStartingAbilities: Granting %d abilities"), StartingAbilities.Num());
+
+	// Grant all abilities from Blueprint-configurable array
+	for (TSubclassOf<UGameplayAbility> AbilityClass : StartingAbilities)
+	{
+		if (AbilityClass)
+		{
+			FGameplayAbilitySpec AbilitySpec(AbilityClass, 1, INDEX_NONE, this);
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+			
+			if (Handle.IsValid())
+			{
+				UE_LOG(LogTemp, Log, TEXT("GrantStartingAbilities: Successfully granted %s"), 
+					*AbilityClass->GetName());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("GrantStartingAbilities: Failed to grant %s"), 
+					*AbilityClass->GetName());
+			}
+		}
+	}
+
+	// Apply starting effects
+	for (TSubclassOf<UGameplayEffect> EffectClass : StartingEffects)
+	{
+		if (EffectClass)
+		{
+			FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
+			ContextHandle.AddSourceObject(this);
+			
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
+				EffectClass, 1, ContextHandle);
+			
+			if (SpecHandle.IsValid())
+			{
+				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				UE_LOG(LogTemp, Log, TEXT("GrantStartingAbilities: Successfully applied effect %s"), 
+					*EffectClass->GetName());
+			}
+		}
+	}
+}
+
+// BLUEPRINT CALLABLE ATTRIBUTE INITIALIZATION
+void AMyCharacter::InitializeStartingAttributes()
+{
+	if (!AbilitySystemComponent || !AttributeSet)
+	{
+		UE_LOG(LogTemp, Error, TEXT("InitializeStartingAttributes: GAS components not initialized"));
+		return;
+	}
+
+	UMyAttributeSet* MyAttributeSet = GetMyAttributeSet();
+	if (!MyAttributeSet)
+	{
+		UE_LOG(LogTemp, Error, TEXT("InitializeStartingAttributes: MyAttributeSet is null"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("InitializeStartingAttributes: Setting attributes from Blueprint values"));
+
+	// Set starting attribute values from Blueprint-editable properties
+	// Note: In production, you'd typically use GameplayEffects for this, but direct setting works for prototyping
+	
+	// Set health values
+	if (StartingMaxHealth > 0.0f)
+	{
+		MyAttributeSet->SetMaxHealth(StartingMaxHealth);
+		UE_LOG(LogTemp, Log, TEXT("InitializeStartingAttributes: Set MaxHealth to %.1f"), StartingMaxHealth);
+	}
+	
+	if (StartingHealth > 0.0f)
+	{
+		MyAttributeSet->SetHealth(FMath::Clamp(StartingHealth, 1.0f, StartingMaxHealth));
+		UE_LOG(LogTemp, Log, TEXT("InitializeStartingAttributes: Set Health to %.1f"), 
+			FMath::Clamp(StartingHealth, 1.0f, StartingMaxHealth));
+	}
+
+	// Set air bounce count (MaxAirBounces is handled by Blueprint property, not AttributeSet)
+	MyAttributeSet->SetAirBounceCount(static_cast<float>(StartingAirBounceCount));
+	
+	UE_LOG(LogTemp, Log, TEXT("InitializeStartingAttributes: Set AirBounceCount to %d (MaxAirBounces: %d managed by Blueprint)"), 
+		StartingAirBounceCount, StartingMaxAirBounces);
+
+	// Force attribute replication update
+	if (AbilitySystemComponent->AbilityActorInfo.IsValid())
+	{
+		AbilitySystemComponent->SetNumericAttributeBase(MyAttributeSet->GetHealthAttribute(), MyAttributeSet->GetHealth());
+		AbilitySystemComponent->SetNumericAttributeBase(MyAttributeSet->GetMaxHealthAttribute(), MyAttributeSet->GetMaxHealth());
+		AbilitySystemComponent->SetNumericAttributeBase(MyAttributeSet->GetAirBounceCountAttribute(), MyAttributeSet->GetAirBounceCount());
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("InitializeStartingAttributes: Attribute initialization complete"));
 }

@@ -137,6 +137,47 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bounce|Feel", meta = (ClampMin = "0.0", ClampMax = "0.5"))
 	float BounceInputWindow = 0.1f;
 
+	// BLUEPRINT ACCESSIBLE ATTRIBUTES - Designer-friendly attribute access
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes|Health", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float StartingHealth = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes|Health", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float StartingMaxHealth = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes|Movement", meta = (ClampMin = "0", ClampMax = "10"))
+	int32 StartingAirBounceCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes|Movement", meta = (ClampMin = "0", ClampMax = "10"))
+	int32 StartingMaxAirBounces = 2;
+
+	// ABILITY GRANTING - Blueprint-controlled ability setup
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities|Setup")
+	TArray<TSubclassOf<class UGameplayAbility>> StartingAbilities;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities|Setup")
+	TArray<TSubclassOf<class UGameplayEffect>> StartingEffects;
+
+	// Blueprint callable functions for attribute management
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetCurrentHealth() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	float GetMaxHealth() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	int32 GetCurrentAirBounces() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	int32 GetMaxAirBounces() const;
+
+	// Blueprint callable function to grant abilities (call this from Blueprint BeginPlay)
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void GrantStartingAbilities();
+
+	// Blueprint callable function to apply starting attribute values
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	void InitializeStartingAttributes();
+
 protected:
 	// Enhanced Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enhanced Input", meta = (AllowPrivateAccess = "true"))

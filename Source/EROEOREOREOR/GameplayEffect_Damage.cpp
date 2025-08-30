@@ -8,18 +8,35 @@
 #include "Engine/Engine.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Actor.h"
+#include "Misc/Optional.h"
 
-// Damage type tags for the system
+// Damage type tags for the system - moved to static function to avoid static initialization order issues
 namespace DamageTags
 {
-	const FGameplayTag Physical = FGameplayTag::RequestGameplayTag(FName("Damage.Type.Physical"));
-	const FGameplayTag Elemental = FGameplayTag::RequestGameplayTag(FName("Damage.Type.Elemental"));
-	const FGameplayTag BaseDamage = FGameplayTag::RequestGameplayTag(FName("Damage.Base"));
-	const FGameplayTag CriticalHit = FGameplayTag::RequestGameplayTag(FName("Damage.Critical"));
+	static FGameplayTag Physical;
+	static FGameplayTag Elemental; 
+	static FGameplayTag BaseDamage;
+	static FGameplayTag CriticalHit;
+	static bool bTagsInitialized = false;
+	
+	void InitializeTags()
+	{
+		if (!bTagsInitialized)
+		{
+			Physical = FGameplayTag::RequestGameplayTag(FName("Damage.Type.Physical"));
+			Elemental = FGameplayTag::RequestGameplayTag(FName("Damage.Type.Elemental"));
+			BaseDamage = FGameplayTag::RequestGameplayTag(FName("Damage.Base"));
+			CriticalHit = FGameplayTag::RequestGameplayTag(FName("Damage.Critical"));
+			bTagsInitialized = true;
+		}
+	}
 }
 
 UGameplayEffect_Damage::UGameplayEffect_Damage()
 {
+	// Initialize damage tags when the class is constructed
+	DamageTags::InitializeTags();
+	
 	// Set up the damage effect as instant
 	DurationPolicy = EGameplayEffectDurationType::Instant;
 	
@@ -35,6 +52,9 @@ UGameplayEffect_Damage::UGameplayEffect_Damage()
 
 UDamageExecutionCalculation::UDamageExecutionCalculation()
 {
+	// Initialize damage tags to ensure they're available
+	DamageTags::InitializeTags();
+	
 	// Define which attributes we need to capture for damage calculation
 	AttackPowerDef = FGameplayEffectAttributeCaptureDefinition(UMyAttributeSet::GetAttackPowerAttribute(), EGameplayEffectAttributeCaptureSource::Source, false);
 	CriticalHitChanceDef = FGameplayEffectAttributeCaptureDefinition(UMyAttributeSet::GetCriticalHitChanceAttribute(), EGameplayEffectAttributeCaptureSource::Source, false);
@@ -197,6 +217,9 @@ void UDamageExecutionCalculation::ApplyStatusEffects(const FGameplayEffectCustom
 UDamageApplicationComponent::UDamageApplicationComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	
+	// Initialize damage tags
+	DamageTags::InitializeTags();
 	
 	// Set default damage effect
 	DamageEffectClass = UGameplayEffect_Damage::StaticClass();

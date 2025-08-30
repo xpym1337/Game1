@@ -8,6 +8,7 @@
 #include "Engine/TimerHandle.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Misc/Optional.h"
 #include "GameplayAbility_Dash.generated.h"
 
 // Forward declarations
@@ -85,22 +86,53 @@ public:
 	void ResetToDefaultPreset();
 
 protected:
-	// DASH VELOCITY CONTROL - Epic Games naming convention
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Velocity", 
-		meta = (ClampMin = "100.0", ClampMax = "10000.0", UIMin = "500.0", UIMax = "5000.0"))
+	// DASH VELOCITY CONTROL - Core speed and power settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🚀 Dash Core Settings", 
+		meta = (ClampMin = "100.0", ClampMax = "10000.0", UIMin = "500.0", UIMax = "5000.0", Units = "cm/s",
+		DisplayName = "Base Dash Speed", ToolTip = "Primary speed of the dash movement. Higher = faster dash."))
 	float DashSpeed = 1875.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "5000.0", UIMin = "0.0", UIMax = "2500.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🚀 Dash Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "5000.0", UIMin = "0.0", UIMax = "2500.0", Units = "cm/s",
+		DisplayName = "Initial Burst Speed", ToolTip = "Extra speed applied at dash start for snappy feel. 0 = no burst."))
 	float DashInitialBurstSpeed = 2500.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🚀 Dash Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0", Units = "Multiplier",
+		DisplayName = "Speed Decay Rate", ToolTip = "How quickly dash slows down over time. 0 = constant speed, 1 = immediate stop."))
 	float DashSpeedDecayRate = 0.15f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Velocity", 
-		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "🚀 Dash Core Settings", 
+		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0", Units = "Multiplier",
+		DisplayName = "Vertical Momentum Keep", ToolTip = "How much vertical velocity to preserve during dash. 1 = keep all, 0 = remove all."))
 	float DashVerticalVelocityPreservation = 1.0f;
+
+	// AXIS MULTIPLIERS - Fine-tune directional control
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "⚖️ Axis Control", 
+		meta = (ClampMin = "0.1", ClampMax = "5.0", UIMin = "0.5", UIMax = "3.0", Units = "Multiplier",
+		DisplayName = "X-Axis Multiplier", ToolTip = "Boost/reduce horizontal dash strength. 1.0 = normal, 2.0 = double strength."))
+	float DashXAxisMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "⚖️ Axis Control", 
+		meta = (ClampMin = "0.1", ClampMax = "5.0", UIMin = "0.5", UIMax = "3.0", Units = "Multiplier",
+		DisplayName = "Y-Axis Multiplier", ToolTip = "Boost/reduce side-to-side dash strength. 1.0 = normal, 2.0 = double strength."))
+	float DashYAxisMultiplier = 1.0f;
+
+	// POWER MULTIPLIERS - Enhanced dash effects
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "💪 Power Multipliers", 
+		meta = (ClampMin = "0.1", ClampMax = "10.0", UIMin = "0.5", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Overall Velocity Boost", ToolTip = "Multiply final dash velocity. Great for power-ups! 1.0 = normal, 3.0 = triple power."))
+	float DashVelocityMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "💪 Power Multipliers", 
+		meta = (ClampMin = "0.1", ClampMax = "10.0", UIMin = "0.5", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Momentum Transfer Power", ToolTip = "How much dash momentum transfers to other abilities. Higher = stronger combo potential."))
+	float DashMomentumMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "💪 Power Multipliers", 
+		meta = (ClampMin = "0.1", ClampMax = "10.0", UIMin = "0.5", UIMax = "5.0", Units = "Multiplier",
+		DisplayName = "Direction Focus Power", ToolTip = "Amplify directional precision. Higher = more focused dash direction."))
+	float DashDirectionalMultiplier = 1.0f;
 
 	// DASH TIMING CONTROL - Precise duration management
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash|Timing", 

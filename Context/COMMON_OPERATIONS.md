@@ -1073,6 +1073,66 @@ void AMyCharacter::TestBounce()
 }
 ```
 
+## Include Order Templates
+
+### Standard Include Order
+Always follow this exact order:
+1. CoreMinimal.h (ALWAYS FIRST)
+2. Parent class header (e.g., GameplayAbility.h)
+3. Engine headers (Engine/*, Components/*)
+4. Plugin headers (GameplayTagContainer.h, etc.)
+5. Project headers (custom classes)
+6. .generated.h (ALWAYS LAST)
+
+### Gameplay Ability Template
+```cpp
+#include "CoreMinimal.h"                    // ALWAYS FIRST
+#include "Abilities/GameplayAbility.h"      // Parent class
+#include "GameplayTagContainer.h"           // GAS integration
+#include "Engine/TimerHandle.h"             // Timer usage
+#include "MyGameplayAbility.generated.h"    // ALWAYS LAST
+
+// Forward declarations (to minimize includes)
+class AMyCharacter;
+class UCurveFloat;
+```
+
+### Component Template  
+```cpp
+#include "CoreMinimal.h"                    // ALWAYS FIRST
+#include "Components/ActorComponent.h"      // Parent class
+#include "GameplayTagContainer.h"           // If using tags
+#include "MyComponent.generated.h"          // ALWAYS LAST
+
+// Forward declarations
+class AMyCharacter;
+```
+
+### Actor Template
+```cpp
+#include "CoreMinimal.h"                    // ALWAYS FIRST
+#include "GameFramework/Actor.h"            // Parent class
+#include "GameplayTagContainer.h"           // If implementing tag interface
+#include "MyActor.generated.h"              // ALWAYS LAST
+
+// Forward declarations
+class UBoxComponent;
+class UStaticMeshComponent;
+```
+
+### Critical Dependency Self-Check
+Before completing any code implementation, add this comment:
+```cpp
+// Dependency Check:
+// ✓ CoreMinimal.h first
+// ✓ Parent class include second  
+// ✓ Required modules in Build.cs (GameplayTags, GameplayAbilities, etc.)
+// ✓ Forward declared classes where possible (performance optimization)
+// ✓ .generated.h last
+// ✓ All gameplay tags registered in GameplayTags.ini
+// ✓ Documentation updated
+```
+
 ## Essential Include Patterns
 
 ### 📦 Common Include Sets
