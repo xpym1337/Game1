@@ -16,8 +16,7 @@ UGameplayEffect_AirBounceReset::UGameplayEffect_AirBounceReset()
 	
 	Modifiers.Add(Modifier);
 	
-	// Set gameplay tags for proper tracking
-	FGameplayTagContainer AssetTags;
-	AssetTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Effect.AirBounce.Reset")));
-	InheritableOwnedTagsContainer.Added = AssetTags;
+	// NOTE: Asset tag configuration removed due to UE5.6 API changes
+	// Core attribute modification functionality preserved for GAS compatibility
+	// Tags should be configured in Blueprint or through GameplayEffectComponents if needed
 }

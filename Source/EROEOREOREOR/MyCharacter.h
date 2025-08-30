@@ -12,12 +12,14 @@
 #include "VelocitySnapshotComponent.h"
 #include "CombatStateMachineComponent.h"
 #include "GameplayEffect_Damage.h"
+#include "AttackShapeComponent.h"
 #include "MyCharacter.generated.h"
 
 class UInputMappingContext;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
+class UDamageApplicationComponent;
 
 UCLASS()
 class EROEOREOREOR_API AMyCharacter : public ACharacter , public IAbilitySystemInterface

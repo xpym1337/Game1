@@ -79,6 +79,12 @@ public:
     
     UFUNCTION(BlueprintPure, Category = "Input Buffer")
     TArray<FGameplayTag> GetBufferedInputs() const { return InputBuffer; }
+    
+    UFUNCTION(BlueprintPure, Category = "Input Buffer")
+    int32 GetInputBufferSize() const;
+    
+    UFUNCTION(BlueprintPure, Category = "Data Management")
+    int32 GetLoadedActionCount() const;
 
     // Combo System
     UFUNCTION(BlueprintPure, Category = "Combo System")
@@ -137,7 +143,7 @@ public:
     TArray<FString> GetAvailableHiddenCombos() const;
 
     // Debug & Testing
-    UFUNCTION(BlueprintCallable, Category = "Debug", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "Debug", CallInEditor)
     void TestAction(const FGameplayTag& ActionTag);
     
     UFUNCTION(BlueprintCallable, Category = "Debug")
@@ -146,7 +152,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Debug")
     FString GetDebugStateInfo() const;
     
-    UFUNCTION(BlueprintCallable, Category = "Debug", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "Debug", CallInEditor)
     void PrintCurrentState();
 
     // Events
@@ -221,20 +227,20 @@ protected:
 
     // Component references
     UPROPERTY(BlueprintReadOnly, Category = "Component References", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<UCombatPrototypeComponent> CombatPrototype;
+    UCombatPrototypeComponent* CombatPrototype;
     
     UPROPERTY(BlueprintReadOnly, Category = "Component References", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<UAoEPrototypeComponent> AoEComponent;
+    UAoEPrototypeComponent* AoEComponent;
     
     UPROPERTY(BlueprintReadOnly, Category = "Component References", meta = (AllowPrivateAccess = "true"))
     TWeakObjectPtr<AMyCharacter> OwnerCharacter;
 
     // Configuration
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<UDataTable> DefaultActionDataTable;
+    UDataTable* DefaultActionDataTable;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<UDataTable> DefaultHiddenComboDataTable;
+    UDataTable* DefaultHiddenComboDataTable;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration", meta = (AllowPrivateAccess = "true"))
     bool bAutoLoadDefaultTables = true;

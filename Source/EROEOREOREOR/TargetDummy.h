@@ -4,6 +4,10 @@
 #include "GameFramework/Actor.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
+#include "AttributeSet.h"
+#include "GameplayEffectTypes.h"
+#include "GameplayEffect.h"
+#include "GameplayEffectExtension.h"
 #include "MyAttributeSet.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
@@ -111,7 +115,6 @@ private:
 	void RegenerateHealth();
 	void ResetDamageEffect();
 
-	// Attribute change callbacks
-	UFUNCTION()
-	void OnHealthChanged(const FOnAttributeChangeData& Data);
+	// Attribute change callbacks - UE5.6 compatible
+	void OnHealthChanged(float OldValue, float NewValue);
 };

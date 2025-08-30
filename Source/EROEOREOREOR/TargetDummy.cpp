@@ -82,10 +82,13 @@ void ATargetDummy::BeginPlay()
 			MyAttributeSet->SetElementalResistance(0.0f);
 		}
 		
-		// Listen for health changes
+		// Listen for health changes - UE5.6 compatible approach using lambda
 		if (AbilitySystemComponent)
 		{
-			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetHealthAttribute()).AddUObject(this, &ATargetDummy::OnHealthChanged);
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UMyAttributeSet::GetHealthAttribute()).AddLambda([this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged(Data.OldValue, Data.NewValue);
+			});
 		}
 	}
 
@@ -237,14 +240,12 @@ void ATargetDummy::ResetDamageEffect()
 	}
 }
 
-void ATargetDummy::OnHealthChanged(const FOnAttributeChangeData& Data)
+void ATargetDummy::OnHealthChanged(float OldValue, float NewValue)
 {
-	const float NewHealth = Data.NewValue;
-	const float OldHealth = Data.OldValue;
-	const float HealthDifference = NewHealth - OldHealth;
+	const float HealthDifference = NewValue - OldValue;
 	
 	UE_LOG(LogTemp, Log, TEXT("TargetDummy: Health changed from %.1f to %.1f (diff: %.1f)"), 
-		OldHealth, NewHealth, HealthDifference);
+		OldValue, NewValue, HealthDifference);
 	
 	// Track damage taken
 	if (HealthDifference < 0.0f)
@@ -272,11 +273,11 @@ void ATargetDummy::OnHealthChanged(const FOnAttributeChangeData& Data)
 		}
 		
 		UE_LOG(LogTemp, Warning, TEXT("TargetDummy: Took %.1f damage! Health: %.1f/%.1f (Total: %.1f, Hits: %d)"), 
-			DamageTaken, NewHealth, Data.NewValue, TotalDamageReceived, HitCount);
+			DamageTaken, NewValue, NewValue, TotalDamageReceived, HitCount);
 	}
 	
 	// Handle death
-	if (NewHealth <= 0.0f)
+	if (NewValue <= 0.0f)
 	{
 		UE_LOG(LogTemp, Error, TEXT("TargetDummy: DESTROYED! Total damage taken: %.1f over %d hits"), 
 			TotalDamageReceived, HitCount);

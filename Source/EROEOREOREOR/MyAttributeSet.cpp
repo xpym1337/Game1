@@ -45,60 +45,60 @@ void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AirBounceCount, COND_None, REPNOTIFY_Always);
 }
 
-void UMyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
+void UMyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Health, OldHealth);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Health, OldValue);
 }
 
-void UMyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+void UMyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxHealth, OldMaxHealth);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxHealth, OldValue);
 }
 
-void UMyAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
+void UMyAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Stamina, OldStamina);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Stamina, OldValue);
 }
 
-void UMyAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
+void UMyAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxStamina, OldMaxStamina);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxStamina, OldValue);
 }
 
-void UMyAttributeSet::OnRep_AirBounceCount(const FGameplayAttributeData& OldAirBounceCount)
+void UMyAttributeSet::OnRep_AirBounceCount(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AirBounceCount, OldAirBounceCount);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AirBounceCount, OldValue);
 }
 
 // Combat Attributes OnRep Functions
-void UMyAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower)
+void UMyAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackPower, OldAttackPower);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackPower, OldValue);
 }
 
-void UMyAttributeSet::OnRep_CriticalHitChance(const FGameplayAttributeData& OldCriticalHitChance)
+void UMyAttributeSet::OnRep_CriticalHitChance(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitChance, OldCriticalHitChance);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitChance, OldValue);
 }
 
-void UMyAttributeSet::OnRep_CriticalHitMultiplier(const FGameplayAttributeData& OldCriticalHitMultiplier)
+void UMyAttributeSet::OnRep_CriticalHitMultiplier(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitMultiplier, OldCriticalHitMultiplier);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, CriticalHitMultiplier, OldValue);
 }
 
-void UMyAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldAttackSpeed)
+void UMyAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackSpeed, OldAttackSpeed);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackSpeed, OldValue);
 }
 
-void UMyAttributeSet::OnRep_PhysicalResistance(const FGameplayAttributeData& OldPhysicalResistance)
+void UMyAttributeSet::OnRep_PhysicalResistance(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, PhysicalResistance, OldPhysicalResistance);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, PhysicalResistance, OldValue);
 }
 
-void UMyAttributeSet::OnRep_ElementalResistance(const FGameplayAttributeData& OldElementalResistance)
+void UMyAttributeSet::OnRep_ElementalResistance(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, ElementalResistance, OldElementalResistance);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, ElementalResistance, OldValue);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)

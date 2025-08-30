@@ -2,6 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameplayEffect.h"
+#include "GameplayEffectExecutionCalculation.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
+#include "Components/ActorComponent.h"
 #include "CombatSystemTypes.h"
 #include "GameplayEffect_Damage.generated.h"
 

@@ -1,11 +1,14 @@
 #include "AttackShapeComponent.h"
 #include "GameplayEffect_Damage.h"
+#include "MyCharacter.h"
 #include "Engine/Engine.h"
 #include "GameFramework/Actor.h"
 #include "Components/PrimitiveComponent.h"
 #include "CollisionQueryParams.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffectTypes.h"
 
 UAttackShapeComponent::UAttackShapeComponent()
 {
@@ -263,15 +266,32 @@ bool UAttackShapeComponent::CheckSphereCollision(const FAttackShapeData& ShapeDa
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
 	
-	return UKismetSystemLibrary::SphereOverlapActors(
+	TArray<AActor*> OverlapActors;
+	const bool bHit = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		WorldPos,
 		ShapeData.PrimarySize,
 		ObjectTypes,
 		nullptr,
 		ActorsToIgnore,
-		OutHits
+		OverlapActors
 	);
+	
+	// Convert AActor array to FHitResult array
+	for (AActor* Actor : OverlapActors)
+	{
+		if (Actor)
+		{
+			FHitResult HitResult;
+			HitResult.HitObjectHandle = FActorInstanceHandle(Actor);
+			HitResult.Location = Actor->GetActorLocation();
+			HitResult.ImpactPoint = Actor->GetActorLocation();
+			HitResult.Component = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+			OutHits.Add(HitResult);
+		}
+	}
+	
+	return bHit;
 }
 
 bool UAttackShapeComponent::CheckCapsuleCollision(const FAttackShapeData& ShapeData, TArray<FHitResult>& OutHits)
@@ -285,7 +305,8 @@ bool UAttackShapeComponent::CheckCapsuleCollision(const FAttackShapeData& ShapeD
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
 	
-	return UKismetSystemLibrary::CapsuleOverlapActors(
+	TArray<AActor*> OverlapActors;
+	const bool bHit = UKismetSystemLibrary::CapsuleOverlapActors(
 		GetWorld(),
 		WorldPos,
 		ShapeData.PrimarySize, // Radius
@@ -293,8 +314,24 @@ bool UAttackShapeComponent::CheckCapsuleCollision(const FAttackShapeData& ShapeD
 		ObjectTypes,
 		nullptr,
 		ActorsToIgnore,
-		OutHits
+		OverlapActors
 	);
+	
+	// Convert AActor array to FHitResult array
+	for (AActor* Actor : OverlapActors)
+	{
+		if (Actor)
+		{
+			FHitResult HitResult;
+			HitResult.HitObjectHandle = FActorInstanceHandle(Actor);
+			HitResult.Location = Actor->GetActorLocation();
+			HitResult.ImpactPoint = Actor->GetActorLocation();
+			HitResult.Component = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+			OutHits.Add(HitResult);
+		}
+	}
+	
+	return bHit;
 }
 
 bool UAttackShapeComponent::CheckBoxCollision(const FAttackShapeData& ShapeData, TArray<FHitResult>& OutHits)
@@ -309,16 +346,32 @@ bool UAttackShapeComponent::CheckBoxCollision(const FAttackShapeData& ShapeData,
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
 	
-	return UKismetSystemLibrary::BoxOverlapActors(
+	TArray<AActor*> OverlapActors;
+	const bool bHit = UKismetSystemLibrary::BoxOverlapActors(
 		GetWorld(),
 		WorldPos,
 		BoxExtent,
-		WorldRot,
 		ObjectTypes,
 		nullptr,
 		ActorsToIgnore,
-		OutHits
+		OverlapActors
 	);
+	
+	// Convert AActor array to FHitResult array
+	for (AActor* Actor : OverlapActors)
+	{
+		if (Actor)
+		{
+			FHitResult HitResult;
+			HitResult.HitObjectHandle = FActorInstanceHandle(Actor);
+			HitResult.Location = Actor->GetActorLocation();
+			HitResult.ImpactPoint = Actor->GetActorLocation();
+			HitResult.Component = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+			OutHits.Add(HitResult);
+		}
+	}
+	
+	return bHit;
 }
 
 bool UAttackShapeComponent::CheckConeCollision(const FAttackShapeData& ShapeData, TArray<FHitResult>& OutHits)
@@ -642,16 +695,25 @@ void UAttackShapeComponent::HandleActorHit(AActor* HitActor, const FVector& HitL
 		LastHitTimes.FindOrAdd(HitActor) = GetWorld()->GetTimeSeconds();
 	}
 	
-	// Apply damage using the damage application component
-	if (UDamageApplicationComponent* DamageComponent = GetOwner()->FindComponentByClass<UDamageApplicationComponent>())
+	// Apply damage through GAS - integrate with MyCharacter's ability system
+	if (AMyCharacter* MyChar = Cast<AMyCharacter>(GetOwner()))
 	{
-		// Apply damage from the current attack data
-		DamageComponent->ApplyDamage(HitActor, CurrentAttackData, GetOwner());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AttackShapeComponent: No DamageApplicationComponent found on %s"), 
-			*GetOwner()->GetName());
+		// Use GAS to apply damage effect
+		if (UAbilitySystemComponent* ASC = MyChar->GetAbilitySystemComponent())
+		{
+			// Create and apply damage gameplay effect
+			if (UGameplayEffect* DamageEffect = CreateDamageEffect(CurrentAttackData))
+			{
+				FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+				EffectContext.AddHitResult(FHitResult()); // Add basic hit result
+				
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DamageEffect->GetClass(), 1.0f, EffectContext);
+				if (SpecHandle.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC);
+				}
+			}
+		}
 	}
 	
 	// Broadcast hit event
@@ -667,4 +729,11 @@ void UAttackShapeComponent::HandleActorHit(AActor* HitActor, const FVector& HitL
 	
 	UE_LOG(LogTemp, Log, TEXT("AttackShapeComponent: Hit actor '%s' at %s"), 
 		*HitActor->GetName(), *HitLocation.ToString());
+}
+
+UGameplayEffect* UAttackShapeComponent::CreateDamageEffect(const FAttackPrototypeData& AttackData)
+{
+	// For now, return the default damage effect class
+	// In a full implementation, you'd create different effects based on attack data
+	return UGameplayEffect_Damage::StaticClass()->GetDefaultObject<UGameplayEffect_Damage>();
 }

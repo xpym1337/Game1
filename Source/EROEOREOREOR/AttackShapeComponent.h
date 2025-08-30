@@ -127,6 +127,9 @@ private:
 	bool IsShapeActiveThisFrame(const FAttackShapeData& ShapeData) const;
 	bool CanHitActor(AActor* Actor, const FAttackShapeData& ShapeData) const;
 	void HandleActorHit(AActor* HitActor, const FVector& HitLocation, const FAttackShapeData& ShapeData);
+	
+	// GAS Integration
+	class UGameplayEffect* CreateDamageEffect(const FAttackPrototypeData& AttackData);
 
 	// Performance optimization
 	float LastCollisionCheckTime = 0.0f;

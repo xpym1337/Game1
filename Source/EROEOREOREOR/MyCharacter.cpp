@@ -8,6 +8,8 @@
 #include "GameplayAbility_Bounce.h"
 #include "CombatStateMachineComponent.h"
 #include "CombatPrototypeComponent.h"
+#include "AttackShapeComponent.h"
+#include "GameplayEffect_Damage.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"

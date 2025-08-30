@@ -106,7 +106,7 @@ struct FAoEBehaviorData : public FTableRowBase
     float ExpansionSpeed = 500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")
-    TObjectPtr<UCurveFloat> ExpansionCurve; // Custom expansion timing
+    UCurveFloat* ExpansionCurve; // Custom expansion timing
 
     // Projectile (for projectile-based AoEs)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior", meta = (ClampMin = "0.0"))
@@ -145,7 +145,7 @@ struct FAoEDamageData : public FTableRowBase
     bool bUseDamageFalloff = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
-    TObjectPtr<UCurveFloat> DamageFalloffCurve;
+    UCurveFloat* DamageFalloffCurve;
 
     // Hit frequency for persistent effects
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage", meta = (ClampMin = "0.0"))
@@ -186,6 +186,23 @@ struct FAoEPrototypeData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AoE Prototype")
     FLinearColor DebugColor = FLinearColor::Red;
+};
+
+USTRUCT()
+struct FActiveAoE
+{
+    GENERATED_BODY()
+
+    FString Name;
+    FAoEPrototypeData Data;
+    float ElapsedTime = 0.0f;
+    FVector Location = FVector::ZeroVector;
+    FVector ProjectileLocation = FVector::ZeroVector;
+    TArray<AActor*> HitActors;
+    TMap<AActor*, int32> ActorHitCounts;
+    TMap<AActor*, float> LastHitTimes;
+    bool bIsActive = false;
+    bool bProjectileActive = false;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAoEHit, AActor*, HitActor, FVector, HitLocation, float, DamageAmount);
@@ -251,10 +268,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "AoE Prototype")
     void SetDebugVisualization(bool bEnabled);
 
-    UFUNCTION(BlueprintCallable, Category = "AoE Prototype", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "AoE Prototype", CallInEditor)
     void TestAoEPrototype(const FString& PrototypeName);
 
-    UFUNCTION(BlueprintCallable, Category = "AoE Prototype", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "AoE Prototype", CallInEditor)
     void PreviewAoEShape(const FString& PrototypeName);
 
     // Events
@@ -267,7 +284,7 @@ public:
 protected:
     // Configuration
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration")
-    TObjectPtr<UDataTable> AoEDataTable;
+    UDataTable* AoEDataTable;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration")
     bool bAutoLoadDataTable = true;
@@ -277,23 +294,6 @@ protected:
 
 private:
     // Active AoE tracking
-    USTRUCT()
-    struct FActiveAoE
-    {
-        GENERATED_BODY()
-
-        FString Name;
-        FAoEPrototypeData Data;
-        float ElapsedTime = 0.0f;
-        FVector Location = FVector::ZeroVector;
-        FVector ProjectileLocation = FVector::ZeroVector;
-        TArray<AActor*> HitActors;
-        TMap<AActor*, int32> ActorHitCounts;
-        TMap<AActor*, float> LastHitTimes;
-        bool bIsActive = false;
-        bool bProjectileActive = false;
-    };
-
     UPROPERTY()
     TArray<FActiveAoE> ActiveAoEs;
 

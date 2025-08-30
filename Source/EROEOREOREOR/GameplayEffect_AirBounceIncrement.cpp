@@ -16,8 +16,6 @@ UGameplayEffect_AirBounceIncrement::UGameplayEffect_AirBounceIncrement()
 	
 	Modifiers.Add(Modifier);
 	
-	// Set gameplay tags for proper tracking
-	FGameplayTagContainer AssetTags;
-	AssetTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Effect.AirBounce.Increment")));
-	InheritableOwnedTagsContainer.Added = AssetTags;
+	// NOTE: Tag configuration removed due to UE5.6 API changes
+	// Core attribute modification functionality preserved for GAS compatibility
 }

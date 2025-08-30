@@ -89,10 +89,10 @@ struct FTrajectoryData : public FTableRowBase
     float HomingStrength = 1.0f; // For homing trajectory
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
-    TObjectPtr<UCurveFloat> TrajectorySpeedCurve;
+    UCurveFloat* TrajectorySpeedCurve;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trajectory")
-    TObjectPtr<UCurveFloat> TrajectoryPathCurve; // Custom path modification
+    UCurveFloat* TrajectoryPathCurve; // Custom path modification
 };
 
 USTRUCT(BlueprintType)
@@ -225,10 +225,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Combat Prototype")
     void SetDebugVisualization(bool bEnabled);
 
-    UFUNCTION(BlueprintCallable, Category = "Combat Prototype", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "Combat Prototype", CallInEditor)
     void TestCurrentPrototype();
 
-    UFUNCTION(BlueprintCallable, Category = "Combat Prototype", CallInEditor = true)
+    UFUNCTION(BlueprintCallable, Category = "Combat Prototype", CallInEditor)
     void PreviewTrajectory();
 
     // State Machine Integration
@@ -273,7 +273,7 @@ protected:
 
     // Configuration
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration")
-    TObjectPtr<UDataTable> PrototypeDataTable;
+    UDataTable* PrototypeDataTable;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configuration")
     bool bAutoLoadDataTable = true;

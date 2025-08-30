@@ -870,3 +870,25 @@ void UCombatStateMachineComponent::LogFrameInfo() const
     UE_LOG(LogTemp, VeryVerbose, TEXT("Frame: %d, State: %d, Progress: %.2f"), 
            CurrentFrame, static_cast<int32>(CurrentState), GetFrameProgress());
 }
+
+// Missing method implementations
+int32 UCombatStateMachineComponent::GetInputBufferSize() const
+{
+    return InputBuffer.Num();
+}
+
+int32 UCombatStateMachineComponent::GetLoadedActionCount() const
+{
+    return LoadedActions.Num();
+}
+
+bool UCombatStateMachineComponent::CheckInputTiming(float InputTime) const
+{
+    if (!GetWorld())
+    {
+        return false;
+    }
+    
+    float CurrentTime = GetWorld()->GetTimeSeconds();
+    return (CurrentTime - InputTime) <= BufferWindowSeconds;
+}
