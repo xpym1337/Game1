@@ -1,4 +1,5 @@
 /.git
+/.github
 /.vs
 /.vscode
 /Content
@@ -7,3 +8,7 @@
 /Intermediate
 /Reports
 /Saved
+/Plugins/UnrealMCPBridge/.git
+/Plugins/UnrealMCPBridge/Content
+/Plugins/UnrealMCPBridge/Intermediate
+/Plugins/UnrealMCPBridge/MCPClient

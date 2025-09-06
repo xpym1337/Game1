@@ -1,5 +1,93 @@
 [
 	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Private\\MCPSocketServer.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Private\\PythonBridge.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Private\\UnrealMCPBridge.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Private\\UnrealMCPBridgeCommands.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Private\\UnrealMCPBridgeStyle.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Public\\MCPSocketServer.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Public\\PythonBridge.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Public\\UnrealMCPBridge.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Public\\UnrealMCPBridgeCommands.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\Public\\UnrealMCPBridgeStyle.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Plugins\\UnrealMCPBridge\\Source\\UnrealMCPBridge\\UnrealMCPBridge.Build.cs",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\.vscode\\compileCommands_EROEOREOREOR\\UnrealMCPBridge.64.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.6\\Engine\\Source"
+	},
+	{
 		"file": "C:\\Users\\GrillerDriller\\Documents\\Unreal Projects\\EROEOREOREOR\\Source\\EROEOREOREOR\\AoEPrototypeComponent.cpp",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",

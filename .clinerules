@@ -1,0 +1,113 @@
+# EROEOREOREOR - Unreal Engine 5.6 Project Rules
+
+## Project Context
+- UE5.6 C++ Action Combat Game with Gameplay Ability System (GAS)
+- Performance Target: 60 FPS minimum, 120 FPS optimal
+- Architecture: Modular, data-driven, frame-accurate combat
+
+## Critical Rules - ALWAYS FOLLOW
+
+### Before Writing ANY Code
+1. Check module dependencies in Context/BUILD_SETTINGS.md
+2. Verify gameplay tags exist in Config/Tags/GameplayTags.ini
+3. Plan integration points with existing systems
+4. Consider performance impact (maintain 60fps)
+
+### Include Order (MANDATORY)
+```cpp
+#include "CoreMinimal.h"           // ALWAYS FIRST
+#include "ParentClass.h"           // Parent class header
+#include "Engine/Headers.h"        // Engine headers
+#include "ProjectHeaders.h"        // Project headers
+#include "MyClass.generated.h"     // ALWAYS LAST
+```
+
+### Unreal Naming Standards
+- Actors: `A` prefix (AMyCharacter)
+- Objects: `U` prefix (UMyComponent)
+- Structs: `F` prefix (FMyStruct)
+- Enums: `E` prefix (EMyEnum)
+- Components: `U[Name]Component`
+- Blueprints: `BP_` prefix
+- DataTables: `DT_[System][Purpose]`
+
+### GAS Requirements
+- Verify GameplayAbilities module in Build.cs
+- Register tags BEFORE using them
+- Use ATTRIBUTE_ACCESSORS for attributes
+- Cache ability handles for performance
+
+### Combat System
+- Use frame-based timing (60fps baseline)
+- Store frame data in DataTables (CSV)
+- Implement debug visualization
+- Support runtime parameter modification
+
+### Performance Critical
+- NO FindComponentByClass in Tick
+- Cache component references in BeginPlay
+- Use TWeakObjectPtr for actor references
+- Prefer timers/events over Tick
+
+### Data-Driven Design
+- CSV files in Content/Data/[System]/
+- Column names match struct members exactly
+- Support hot-reload for iteration
+- Test in PIE before committing
+
+## MCP Bridge Safety
+
+### Auto-Execute (Safe)
+- get_project_dir, get_content_dir
+- get_actors, find_assets
+- All read-only operations
+
+### Require User Confirmation
+- spawn_actor, modify_actor, delete_actors
+- execute_python, run_blueprint_function
+- Any operation that modifies the project
+
+## Testing Checklist
+- [ ] Compiles in Debug, Development, Shipping
+- [ ] No compilation warnings
+- [ ] Gameplay tags registered
+- [ ] Maintains 60fps
+- [ ] Data hot-reload works
+
+## Quick Reference
+
+### Console Commands
+```
+stat fps       - Frame rate
+stat unit      - Frame timing
+stat game      - Game thread
+stat memory    - Memory usage
+showdebug combat - Combat debug
+```
+
+### Context Documentation
+- BUILD_SETTINGS.md - Module dependencies
+- SYSTEM_INTERFACES.md - Integration patterns
+- DATA_ARCHITECTURE.md - Data structures
+- GAMEPLAY_TAG_REGISTRY.md - All tags
+- CURRENT_WORK_CONTEXT.md - Active work
+
+## Common Pitfalls
+- NEVER skip dependency validation
+- NEVER forget gameplay tag registration
+- NEVER ignore include order
+- NEVER hardcode data-driven values
+- NEVER commit without testing all configs
+
+## Development Workflow
+1. Plan with Context/ documentation
+2. Validate dependencies first
+3. Implement incrementally
+4. Test each change
+5. Profile performance impact
+6. Update Context/ docs
+
+---
+*Use Context/ files for detailed references*
+*Maintain 60fps baseline always*
+*Think modular, test everything*
